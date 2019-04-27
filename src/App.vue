@@ -23,6 +23,10 @@
 
 <script>
 import HelloWorld from './components/HelloWorld'
+import MsdFile from './lib/MsdFile'
+
+let a = new MsdFile("abcd\nefg");
+window.a = a;
 
 export default {
   name: 'App',
