@@ -4,14 +4,13 @@ import { expect } from 'chai';
 import MsdFile from '../../src/lib/MsdFile';
 
 describe('MsdFile', () => {
-  it('parses BigSky correctly', () => {
+  it('parses BigSky difficulty 12 correctly', () => {
     const msdFile = new MsdFile(BigSkySMFile);
     for (let i = 0; i < msdFile.getNumValues(); i++) {
       for (let j = 0; j < msdFile.getNumParams(i); j++) {
         expect(msdFile.getParam(i, j)).to.equal(BigSkyExpected[i][j]);
       }
     }
-    // expect(wrapper.text()).to.include(msg);
   });
 });
 

@@ -10,10 +10,12 @@ export class MsdFile {
 
     // Get a param by index
     public getParam(valueIndex: number, paramIndex: number): string {
-        if (valueIndex >= this.values.length || paramIndex >= this.values[valueIndex].length) {
-            return '';
-        }
         return this.values[valueIndex][paramIndex];
+    }
+
+    // Get a value by index
+    public getValue(valueIndex: number) {
+        return this.values[valueIndex];
     }
 
     public getNumValues() {
