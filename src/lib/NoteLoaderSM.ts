@@ -73,7 +73,7 @@ function SMSetStops(smSongTagInfo: SongTagInfo) {
     smSongTagInfo.stops = NoteLoaderSM.parseStops(smSongTagInfo.params[1]);
 }
 function SMSetDelays(smSongTagInfo: SongTagInfo) {
-    // info.loader->ProcessDelays(info.song->m_SongTiming, (*info.params)[1]);
+    smSongTagInfo.song.songTiming = NoteLoaderSM.processDelays(smSongTagInfo.params[1]);
 }
 function SMSetTimeSignatures(smSongTagInfo: SongTagInfo) {
     // info.loader->ProcessTimeSignatures(info.song->m_SongTiming, (*info.params)[1]);

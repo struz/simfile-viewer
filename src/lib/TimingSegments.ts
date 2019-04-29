@@ -34,6 +34,19 @@ export const ROW_INVALID = -1;
 export abstract class TimingSegment {
     // for our purposes, two floats within this level of error are equal
     public static EPSILON: number = 1e-6;
+
+    /** Compare two numbers for equality.
+     * @param num1 A number.
+     * @param num2 Another number.
+     * @returns true if they are close enough to be equal, false otherwise.
+     */
+    public static compareFloat(num1: number, num2: number) {
+        if (Math.abs(num1 - num2) > this.EPSILON) {
+            return false;
+        }
+        return true;
+    }
+
     /** The row in which this segment activates */
     private startRow: number = 0;
 
@@ -65,6 +78,16 @@ export abstract class TimingSegment {
 
     public toString(dec: number) { return this.getBeat().toString(); }
     public abstract getValues(): number[];
+
+    public lessThan(other: TimingSegment) {
+        return this.getRow() < other.getRow();
+    }
+
+    // overloads should not call this base version; derived classes
+    // should only compare contents, and this compares position.
+    public equals(other: TimingSegment): boolean {
+        return this.getRow() === other.getRow();
+    }
 }
 
 export class DelaySegment extends TimingSegment {
@@ -91,5 +114,16 @@ export class DelaySegment extends TimingSegment {
         const beat = this.getBeat().toFixed(dec);
         const pause = this.getPause().toFixed(dec);
         return `${beat}=${pause}`;
+    }
+
+    public equals(other: TimingSegment): boolean {
+        if (this.getType() !== other.getType()) {
+            return false;
+        }
+
+        if (!(other instanceof DelaySegment)) {
+            return false;
+        }
+        return TimingSegment.compareFloat(this.seconds, other.seconds);
     }
 }
