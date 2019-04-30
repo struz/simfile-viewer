@@ -43,7 +43,7 @@ export class MsdFile {
                 continue;
             }
 
-            // IMPORTANT: files missing ';'s
+            // TODO: files missing ';'s
             // stretch goal
 
             // Start reading a new value

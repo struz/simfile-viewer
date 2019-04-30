@@ -62,5 +62,43 @@ export class Steps {
     public getNoteData(): NoteData {
         return this.noteData;
     }
+
+    public tidyUpData(): void {
+        // Don't set the StepsType to dance single if it's invalid.  That just
+        // causes unrecognized charts to end up where they don't belong.
+        // Leave it as StepsType_Invalid so the Song can handle it specially.  This
+        // is a forwards compatibility feature, so that if a future version adds a
+        // new style, editing a simfile with unrecognized Steps won't silently
+        // delete them. -Kyz
+        if (this.stepsType === StepsType.Invalid) {
+            const stepsTypeString = this.stepsTypeName;
+// tslint:disable-next-line: no-console
+            console.warn(`Detected steps with unknown style '${stepsTypeString}' in sm data`);
+        } else if (this.stepsTypeName === '') {
+            // TODO: lookup the StepsTypeInfo for the stepsType and set the typeName using it
+        }
+
+        if (this.difficulty === Difficulty.Invalid) {
+            // TODO: something about setting the difficulty based on the description
+        }
+
+        if (this.difficulty === Difficulty.Invalid) {
+            if (this.meter === 1) {
+                this.difficulty = Difficulty.Beginner;
+            } else if (this.meter <= 3) {
+                this.difficulty = Difficulty.Easy;
+            } else if (this.meter <= 6) {
+                this.difficulty = Difficulty.Medium;
+            } else {
+                this.difficulty = Difficulty.Hard;
+            }
+        }
+
+        if (this.meter < 1) {
+            // meter is invalid!
+            // TODO: translate prediction function, if it ever seems useful
+            // this.meter = this.predictMeter()
+        }
+    }
 }
 export default Steps;

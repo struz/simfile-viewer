@@ -16,7 +16,7 @@ export enum TimingSegmentType {
     SPEED,
     SCROLL,
     FAKE,
-    NUM_TimingSegmentType,
+    NUM,
     Invalid,
 }
 
@@ -25,7 +25,7 @@ export enum SegmentEffectType {
     Row,		// takes effect on a single row
     Range,	    // takes effect for a definite amount of rows
     Indefinite,	// takes effect until the next segment of its type
-    NUM_SegmentEffectType,
+    NUM,
     Invalid,
 }
 
@@ -187,6 +187,66 @@ export class WarpSegment extends TimingSegment {
 }
 
 /**
+ * Identifies when a chart is to have a different tickcount value
+ * for hold notes.
+ *
+ * A tickcount segment is used to better replicate the checkpoint hold
+ * system used by various based video games. The number is used to
+ * represent how many ticks can be counted in one beat.
+ */
+export class TickcountSegment extends TimingSegment {
+    /** The default amount of ticks per beat. */
+    public static DEFAULT_TICK_COUNT = 4;
+
+    /** The amount of hold checkpoints counted per beat */
+    private ticksPerBeat: number;
+
+    constructor(startRow = ROW_INVALID, ticks = TickcountSegment.DEFAULT_TICK_COUNT) {
+        super(startRow, true);
+        this.ticksPerBeat = ticks;
+    }
+
+    public getType() { return TimingSegmentType.TICKCOUNT; }
+    public getEffectType() { return SegmentEffectType.Indefinite; }
+    public isNotable() { return true; } // indefinite segments are always true
+
+    public getTicks() { return this.ticksPerBeat; }
+    public setTicks(ticks: number) { this.ticksPerBeat = ticks; }
+
+    public debugPrint() {
+        const type = this.getType();
+        const row = this.getRow();
+        const beat = this.getBeat();
+        const ticks = this.getTicks();
+        console.debug(`\t${type}(${row} [${beat}], ${ticks})`);
+    }
+    public toString(dec: number) {
+        const beat = this.getBeat().toFixed(dec);
+        const ticks = this.getTicks();
+        return `${beat}=${ticks}`;
+    }
+
+    public getValues(): number[] {
+        return [this.getTicks()];
+    }
+
+    public equals(other: TimingSegment): boolean {
+        if (this.getType() !== other.getType()) {
+            return false;
+        }
+
+        if (!(other instanceof TickcountSegment)) {
+            return false;
+        }
+        // If they differ in tick count, return false
+        if (!TimingSegment.compareFloat(this.ticksPerBeat, other.ticksPerBeat)) {
+            return false;
+        }
+        return true;
+    }
+}
+
+/**
  * Identifies when a song changes its time signature.
  *
  * This only supports simple time signatures. The upper number
@@ -206,7 +266,6 @@ export class TimeSignatureSegment extends TimingSegment {
 
     public getType() { return TimingSegmentType.TIME_SIG; }
     public getEffectType() { return SegmentEffectType.Indefinite; }
-
     public isNotable() { return true; } // indefinite segments are always true
 
     public getNum() { return this.numerator; }

@@ -6,7 +6,7 @@ import Song from './Song';
 import { Helpers, Difficulty, StepsTypeInfos } from './GameConstantsAndTypes';
 import TimingData from './TimingData';
 import { ROWS_PER_BEAT, NoteHelpers } from './NoteTypes';
-import { TimeSignatureSegment, DelaySegment, BPMSegment, WarpSegment, StopSegment } from './TimingSegments';
+import { TimeSignatureSegment, DelaySegment, BPMSegment, WarpSegment, StopSegment, TickcountSegment } from './TimingSegments';
 
 /**
  * The highest allowable speed before Warps come in.
@@ -262,6 +262,8 @@ export class NoteLoaderSM {
         }
         steps.meter = Helpers.stringToInt(meter);
 
+        steps.tidyUpData();
+
         return steps;
     }
 
@@ -409,9 +411,7 @@ export class NoteLoaderSM {
                 continue;
             }
             const clampedTicks = Helpers.clamp(ticks, 0, ROWS_PER_BEAT);
-            // TODO: actually add the segment - I'm getting fucking sick of these - Struz
-            // IMPORTANT: addsegment tickcount
-            // out.addSegment(new TickcountSegment(NoteHelpers.beatToNoteRow(tickcountBeat), ticks));
+            out.addSegment(new TickcountSegment(NoteHelpers.beatToNoteRow(tickcountBeat), ticks));
         }
     }
 
@@ -646,11 +646,6 @@ export class NoteLoaderSM {
             const params = msdFile.getValue(i);
             const valueName = params[0].toUpperCase();
             reusedSongInfo.params = params; // Ensure we're passing params in
-            // IMPORTANT: based on tag name, do something different to parse it
-            // In StepMania they use a map of functions?
-            // IMPORTANT: we have the functions now - USE THEM
-            // TODO: what is the difference betwen NotesLoaderSM::LoadFromSimfile and ::LoadNotesFromSimfile?
-            // - LoadFromSimfile produces a Song
 
             const handler = songTagHandlers.get(valueName);
             if (handler !== undefined) {
@@ -692,8 +687,8 @@ export class NoteLoaderSM {
 
     /**
      * Retrieve the relevant notedata from the simfile.
-     * @param path the path where the simfile lives.
-     * @param out the Steps we are loading the data into.
+     * @param msdFile the .sm file data.
+     * @returns the Steps we loaded the data into.
      */
     public static loadNoteDataFromSimfile(msdFile: MsdFile): Steps {
         for (let i = 0; i < msdFile.getNumValues(); i++) {
@@ -712,7 +707,7 @@ export class NoteLoaderSM {
                 let difficulty: string = params[3].trim();
 
                 // Hack - if this is a .edit file, fudge the difficulty
-                // TODO: we have no way to know this given the data pasted in, 
+                // TODO: we have no way to know this given the data pasted in,
                 // but StepMania does it by the .edit extension
 
                 // Old version difficulty changes
@@ -725,16 +720,28 @@ export class NoteLoaderSM {
                     }
                 }
 
-                // TODO: something with setting the step type
+                // OMITTED: if the stepsType, description, and difficulty match, don't load the
+                // data. Probably for performance reasons.
+
+
                 const noteData: string = params[6].trim();
                 const steps = new Steps(noteData);
 
                 // this.steps.SetSMNoteData(noteData) // Handles compressed data initialisation - note data is lazily loaded from this
-                // this.steps.TidyUpData() // Handles invalid difficulties and other stuff
+                steps.tidyUpData();
                 return steps;
             }
         }
         throw new Error('could not find note data');
+    }
+
+    /**
+     * @brief Perform some cleanup on the loaded song.
+     * @param song a reference to the song that may need cleaning up.
+     */
+    public static tidyUpData() {
+        // IGNORED: a bunch of background changes. First cut isn't going to support background / foreground gimmicks.
+        // IGNORED: we never load from cache so we shouldn't have to call song.tidyUpData() here
     }
 }
 export default NoteLoaderSM;
