@@ -6,7 +6,7 @@ import Song from './Song';
 import { Helpers, Difficulty, StepsTypeInfos } from './GameConstantsAndTypes';
 import TimingData from './TimingData';
 import { ROWS_PER_BEAT, NoteHelpers } from './NoteTypes';
-import { TimeSignatureSegment, DelaySegment } from './TimingSegments';
+import { TimeSignatureSegment, DelaySegment, BPMSegment, WarpSegment, StopSegment } from './TimingSegments';
 
 /**
  * The highest allowable speed before Warps come in.
@@ -105,7 +105,7 @@ function SMSetSampleLength(info: SongTagInfo) {
 }
 function SMSetDisplayBPM(info: SongTagInfo) {
     // #DISPLAYBPM:[xxx][xxx:xxx]|[*];
-    if (info.params[1] == '*') {
+    if (info.params[1] === '*') {
         info.song.displayBpmType = DisplayBPM.RANDOM;
     } else {
         info.song.displayBpmType = DisplayBPM.SPECIFIED;
@@ -191,6 +191,86 @@ const songTagHandlers: Map<string, SongParseFn> = new Map([
 
 // Reads a song from a .sm file
 export class NoteLoaderSM {
+    /**
+     * Convert a row value to the proper beat value.
+     * This is primarily used for assistance with converting SMA files.
+     * @param line The line that contains the value.
+     * @param rowsPerBeat the number of rows per beat according to the original file.
+     * @return the converted beat value.
+     */
+    public static rowToBeat(line: string, rowsPerBeat: number) {
+        // Trim r and R characters from the sides of the string
+// tslint:disable-next-line: max-line-length
+        // Modifies .trim() polyfill at https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/trim
+        const backup = line.replace(/^[rR]+|[rR]+$/g, '');
+        // If r or R were present, there's multiple rows per beat
+        if (backup !== line) {
+            return Helpers.stringToFloat(line) / rowsPerBeat;
+        }
+        return Helpers.stringToFloat(line);
+    }
+
+    /**
+     * Process the different tokens we have available to get NoteData.
+     * @param stepsType The current StepsType.
+     * @param description The description of the chart.
+     * @param difficulty The difficulty (in words) of the chart.
+     * @param meter the difficulty (in numbers) of the chart.
+     * @param radarValues the calculated radar values.
+     * @param noteData the note data itself.
+     * @returns the Steps with parsed note data.
+     */
+    public static loadFromTokens(
+        stepsType: string,
+        description: string,
+        difficulty: string,
+        meter: string,
+        noteData: string,
+    ): Steps {
+        const steps = new Steps(noteData);
+
+        // Backwards compatibility hacks
+        switch (stepsType) {
+            case 'ez2-single-hard':
+                stepsType = 'ez2-single';
+                break;
+            case 'para':
+                stepsType = 'para-single';
+                break;
+        }
+
+        // TODO: string to steps type
+        steps.stepsType = Helpers.StringToStepsType(stepsType);
+        steps.stepsTypeName = stepsType;
+        steps.description = description;
+        steps.credit = description; // This is often used for both
+        steps.chartName = description; // One more for good measure
+        steps.difficulty = Helpers.oldStyleStringToDifficulty(difficulty);
+
+        // Handle hacks that originated back when StepMania didn't have
+        // Difficulty_Challenge. (At least v1.64, possibly v3.0 final...)
+        if (steps.difficulty === Difficulty.Hard) {
+            if (description === 'smaniac' || description === 'challenge') {
+                steps.difficulty = Difficulty.Challenge;
+            }
+        }
+        if (steps.difficulty === Difficulty.Invalid) {
+            steps.difficulty = Difficulty.Edit;
+        }
+        if (meter.length === 0) {
+            meter = '1';
+        }
+        steps.meter = Helpers.stringToInt(meter);
+
+        return steps;
+    }
+
+    /**
+     * Parse BPM Changes data from a string.
+     * @param line the string in question.
+     * @param rowsPerBeat the number of rows per beat for this purpose.
+     * @returns a SongTimingInfo containing the data.
+     */
     public static parseBpms(line: string, rowsPerBeat: number = -1): SongTimingInfo {
         const songBpmInfo = [];
 
@@ -217,6 +297,7 @@ export class NoteLoaderSM {
      * Parse Stops data from a string.
      * @param line the string in question.
      * @param rowsPerBeat the number of rows per beat for this purpose.
+     * @returns a SongTimingInfo containing the data.
      */
     public static parseStops(line: string, rowsPerBeat: number = -1): SongTimingInfo {
         const songStopInfo = [];
@@ -267,7 +348,7 @@ export class NoteLoaderSM {
     }
 
     /**
-     * @brief Process the Time Signature Segments from the string.
+     * Process the Time Signature Segments from the string.
      * @param out the TimingData being modified.
      * @param line the string in question.
      * @param rowsPerBeat the number of rows per beat for this purpose.
@@ -329,12 +410,13 @@ export class NoteLoaderSM {
             }
             const clampedTicks = Helpers.clamp(ticks, 0, ROWS_PER_BEAT);
             // TODO: actually add the segment - I'm getting fucking sick of these - Struz
+            // IMPORTANT: addsegment tickcount
             // out.addSegment(new TickcountSegment(NoteHelpers.beatToNoteRow(tickcountBeat), ticks));
         }
     }
 
     /**
-     * @brief Process BPM and stop segments from the data.
+     * Process BPM and stop segments from the data.
      * @param out the TimingData being modified.
      * @param vBPMs the vector of BPM changes.
      * @param vStops the vector of stops.
@@ -358,7 +440,7 @@ export class NoteLoaderSM {
         let timeofs = 0;
 
         // Sort BPM changes and stops by beat. Order matters.
-        // TODO: Make sorted lists a precondition rather than sorting them here.
+        // TODO(StepMania): Make sorted lists a precondition rather than sorting them here.
         // The caller may know that the lists are sorted already (e.g. if
         // loaded from cache).
         // It's a list of pairs so we sort by the first value (beat).
@@ -417,15 +499,14 @@ export class NoteLoaderSM {
         // We always want to have an initial BPM.  If we start out warping, this
         // BPM will be added later.  If we start with a regular BPM, add it now.
         if (bpm > 0 && bpm <= FAST_BPM_WARP) {
-            // IMPORTANT: Make BPMSegment a thing!!
-            // out.addSegment(new BPMSegment(NoteHelpers.beatToNoteRow(0), bpm));
+            out.addSegment(new BPMSegment(NoteHelpers.beatToNoteRow(0), bpm));
         }
 
         // Iterate over all BPMs and stops in tandem
         while (bpmIndex < bpmMax || stopIndex < stopMax) {
             // Get the next change in order, with BPMs taking precedence
             // when they fall on the same beat.
-            const changeIsBpm = (stopIndex === stopMax) || 
+            const changeIsBpm = (stopIndex === stopMax) ||
                 (bpmIndex !== bpmMax && bpms[bpmIndex][0] <= stops[stopIndex][0]);
             const change = changeIsBpm ? bpms[bpmIndex] : stops[stopIndex];
 
@@ -440,15 +521,14 @@ export class NoteLoaderSM {
                 if (warpstart >= 0 && bpm > 0 && timeofs > 0) {
                     // timeofs represents how far past the end we are
                     warpend = change[0] - (timeofs * bpm / 60);
-                    // IMPORTANT: make WarpSegment a thing
-                    // out.addSegment(new WarpSegment(NoteHelpers.beatToNoteRow(warpstart),
-                    //     warpend - warpstart));
+                    // warpend and warpstart are floats in the StepMania code, use appropriate constructor
+                    out.addSegment(new WarpSegment(NoteHelpers.beatToNoteRow(warpstart),
+                        warpend - warpstart, false));
 
                     // If the BPM changed during the warp, put that
                     // change at the beginning of the warp.
                     if (bpm !== prewarpbpm) {
-                        // IMPORTANT: make BPMSegment a thing
-                        //out.addSegment(new BPMSegment(NoteHelpers.beatToNoteRow(warpstart), bpm));
+                        out.addSegment(new BPMSegment(NoteHelpers.beatToNoteRow(warpstart), bpm));
                     }
                     // No longer warping
                     warpstart = -1;
@@ -469,8 +549,7 @@ export class NoteLoaderSM {
                 } else if (warpstart < 0) {
                     // No, and we aren't currently warping either.
                     // Just a normal BPM change.
-                    // IMPORTANT: BPMSegment
-                    // out.addSegment(new BPMSegment(NoteHelpers.beatToNoteRow(change[0]), change[1]));
+                    out.addSegment(new BPMSegment(NoteHelpers.beatToNoteRow(change[0]), change[1]));
                 }
                 bpm = change[1];
                 bpmIndex++;
@@ -484,8 +563,7 @@ export class NoteLoaderSM {
                 } else if (warpstart < 0) {
                     // No, and we aren't currently warping either.
                     // Just a normal stop.
-                    // IMPORTANT: make StopSegment a thing
-                    // out.addSegment(new StopSegment(NoteHelpers.beatToNoteRow(change[0]), change[1]));
+                    out.addSegment(new StopSegment(NoteHelpers.beatToNoteRow(change[0]), change[1]));
                 } else {
                     // We're warping already. Stops affect the time
                     // offset directly.
@@ -496,9 +574,10 @@ export class NoteLoaderSM {
                     // amount it goes over.
                     if (change[1] > 0 && timeofs > 0) {
                         warpend = change[0];
-                        // IMPORTANT: yada yada segments
-                        // out.addSegment(new WarpSegment(NoteHelpers.beatToNoteRow(warpstart), warpend - warpstart));
-                        // out.addSegment(new StopSegment(NoteHelpers.beatToNoteRow(change[0]), timeofs));
+                        // warpend and warpstart are floats in the StepMania code, use appropriate constructor
+                        out.addSegment(new WarpSegment(NoteHelpers.beatToNoteRow(warpstart),
+                            warpend - warpstart, false));
+                        out.addSegment(new StopSegment(NoteHelpers.beatToNoteRow(change[0]), timeofs));
 
                         // Now, are we still warping because of
                         // the BPM value?
@@ -512,8 +591,8 @@ export class NoteLoaderSM {
                             // BPM change that happened in
                             // the meantime.
                             if (bpm !== prewarpbpm) {
-                                // IMPORTANT: yada yada segments
-                                // out.addSegment(new WarpSegment(NoteHelpers.beatToNoteRow(warpstart), bpm));
+                                // bpm is a float in the StepMania code, use appropriate constructor
+                                out.addSegment(new WarpSegment(NoteHelpers.beatToNoteRow(warpstart), bpm, false));
                             }
                             warpstart = -1;
                         }
@@ -536,37 +615,22 @@ export class NoteLoaderSM {
                 // Yes. Figure out when it will end.
                 warpend = prevbeat - (timeofs * bpm / 60);
             }
-            // IMPORTANT: yada WarpSegment
-            // out.addSegment(new WarpSegment(NoteHelpers.beatToNoteRow(warpstart),
-            //     warpend - warpstart));
+            // warpend and warpstart are floats in the StepMania code, use appropriate constructor
+            out.addSegment(new WarpSegment(NoteHelpers.beatToNoteRow(warpstart),
+                 warpend - warpstart, false));
 
             // As usual, record any BPM change that happened during the warp
             if (bpm !== prewarpbpm) {
-                // IMPORTANT: yada BPMSegment
-                //out.addSegment(new BPMSegment(NoteHelpers.beatToNoteRow(warpstart), bpm));
+                out.addSegment(new BPMSegment(NoteHelpers.beatToNoteRow(warpstart), bpm));
             }
         }
     }
 
     /**
-     * Convert a row value to the proper beat value.
-     * This is primarily used for assistance with converting SMA files.
-     * @param line The line that contains the value.
-     * @param rowsPerBeat the number of rows per beat according to the original file.
-     * @return the converted beat value.
+     * Attempt to load the specified sm data.
+     * @param msdFile: an MsdFile with the parsed fields for the data.
+     * @return a Song that has the song information.
      */
-    public static rowToBeat(line: string, rowsPerBeat: number) {
-        // Trim r and R characters from the sides of the string
-// tslint:disable-next-line: max-line-length
-        // Modifies .trim() polyfill at https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/trim
-        const backup = line.replace(/^[rR]+|[rR]+$/g, '');
-        // If r or R were present, there's multiple rows per beat
-        if (backup !== line) {
-            return Helpers.stringToFloat(line) / rowsPerBeat;
-        }
-        return Helpers.stringToFloat(line);
-    }
-
     public static loadFromSimfile(msdFile: MsdFile): Song {
         const song = new Song();
 
@@ -610,7 +674,14 @@ export class NoteLoaderSM {
         if (!song.hasSteps()) {
             throw new Error('did not find step data for song');
         }
-        // IMPORTANT: processbpm
+
+        // Turn negative time changes into warps
+        this.processBpmsAndStops(song.songTiming, reusedSongInfo.bpmChanges, reusedSongInfo.stops);
+
+        // Do a cascade through all our data structures to tidy up any edge cases or
+        // backwards compatibility issues that exist.
+        this.tidyUpData();
+
         // IMPORTANT: write my own cascade of tidyUpData() functions and call them here
         // Cut out any things that aren't necessary.
         // Line 633 in Song.cpp is the motherload.
@@ -619,6 +690,11 @@ export class NoteLoaderSM {
         return song;
     }
 
+    /**
+     * Retrieve the relevant notedata from the simfile.
+     * @param path the path where the simfile lives.
+     * @param out the Steps we are loading the data into.
+     */
     public static loadNoteDataFromSimfile(msdFile: MsdFile): Steps {
         for (let i = 0; i < msdFile.getNumValues(); i++) {
             const numParams = msdFile.getNumParams(i);
@@ -659,51 +735,6 @@ export class NoteLoaderSM {
             }
         }
         throw new Error('could not find note data');
-    }
-
-    public static loadFromTokens(
-        stepsType: string,
-        description: string,
-        difficulty: string,
-        meter: string,
-        noteData: string,
-    ): Steps {
-        const steps = new Steps(noteData);
-
-        // Backwards compatibility hacks
-        switch (stepsType) {
-            case 'ez2-single-hard':
-                stepsType = 'ez2-single';
-                break;
-            case 'para':
-                stepsType = 'para-single';
-                break;
-        }
-
-        // TODO: string to steps type
-        steps.stepsType = Helpers.StringToStepsType(stepsType);
-        steps.stepsTypeName = stepsType;
-        steps.description = description;
-        steps.credit = description; // This is often used for both
-        steps.chartName = description; // One more for good measure
-        steps.difficulty = Helpers.oldStyleStringToDifficulty(difficulty);
-
-        // Handle hacks that originated back when StepMania didn't have
-        // Difficulty_Challenge. (At least v1.64, possibly v3.0 final...)
-        if (steps.difficulty === Difficulty.Hard) {
-            if (description === 'smaniac' || description === 'challenge') {
-                steps.difficulty = Difficulty.Challenge;
-            }
-        }
-        if (steps.difficulty === Difficulty.Invalid) {
-            steps.difficulty = Difficulty.Edit;
-        }
-        if (meter.length === 0) {
-            meter = '1';
-        }
-        steps.meter = Helpers.stringToInt(meter);
-
-        return steps;
     }
 }
 export default NoteLoaderSM;

@@ -42,8 +42,8 @@ export class TimingData {
         // Optimisation: if this is our first segment, push and return
         if (segs.length === 0) {
             // TODO: make sure this shallow copy actually works for all delay types
-            const copy = Object.assign(Object.create(Object.getPrototypeOf(seg)), seg);
-            segs.push(copy);
+            const cpy = Object.assign(Object.create(Object.getPrototypeOf(seg)), seg);
+            segs.push(cpy);
         }
 
         const index = this.getSegmentIndexAtRow(tst, seg.getRow());
@@ -88,15 +88,16 @@ export class TimingData {
                 // If the new segment is also redundant, erase the next segment because
                 // that effectively moves it back to the prev segment. -Kyz
                 if (index < segs.length - 1) {
-                    let next: TimingSegment = segs[index + 1];
-                    // IMPORTANT: TODO: implement .equals methods since this won't work
-                    if (seg === next) {
+                    const next: TimingSegment = segs[index + 1];
+                    if (seg.equals(next)) {
                         // The segment after this new one is redundant
-                        if (seg === prev) {
+                        if (seg.equals(prev)) {
                             // This new segment is redundant.  Erase the next segment and
                             // ignore this new one.
                             segs.splice(index + 1, 1);
                             // NOTE: this is actual pointer math in StepMania, not object .equals
+                            // This seems to be shorthand for (onSameRow && index > 0) since that is the
+                            // only way I can see prev being !== cur based on above code.
                             if (prev !== cur) {
                                 segs.splice(index, 1);
                             }
@@ -105,6 +106,7 @@ export class TimingData {
                             // Move the next segment's start back to this row.
                             next.setRow(seg.getRow());
                             // NOTE: this is actual pointer math in StepMania, not object .equals
+                            // See earlier comment about the shorthand this is for.
                             if (prev !== cur) {
                                 segs.splice(index, 1);
                             }
@@ -112,8 +114,9 @@ export class TimingData {
                         }
                     } else {
                         // if true, this is redundant segment change
-                        if (prev === seg) {
+                        if (prev.equals(seg)) {
                             // NOTE: this is actual pointer math in StepMania, not object .equals
+                            // See earlier comment about the shorthand this is for.
                             if (prev !== cur) {
                                 segs.splice(index, 1);
                             }
@@ -122,7 +125,7 @@ export class TimingData {
                     }
                 } else {
                     // if true, this is redundant segment change
-                    if (prev === seg) {
+                    if (prev.equals(seg)) {
                         // NOTE: this is actual pointer math in StepMania, not object .equals
                         if (prev !== cur) {
                             segs.splice(index, 1);

@@ -50,7 +50,7 @@ export abstract class TimingSegment {
     /** The row in which this segment activates */
     private startRow: number = 0;
 
-    constructor(beatOrRow: number, isRow: boolean) {
+    constructor(beatOrRow = ROW_INVALID, isRow = true) {
         // If it's a row, store it, otherwise convert it to a row
         this.startRow = (isRow ? beatOrRow : NoteHelpers.beatToNoteRow(beatOrRow))
     }
@@ -91,7 +91,103 @@ export abstract class TimingSegment {
 }
 
 /**
- * @brief Identifies when a song changes its time signature.
+ * Identifies when a song needs to warp to a new beat.
+ *
+ * A warp segment is used to replicate the effects of Negative BPMs without
+ * abusing negative BPMs. Negative BPMs should be converted to warp segments.
+ * WarpAt=WarpToRelative is the format, where both are in beats.
+ * (Technically they're both rows though.)
+ */
+export class WarpSegment extends TimingSegment {
+    private lengthRows: number;
+
+    constructor(startRow?: number, lengthRowsOrBeats?: number, isRows = true) {
+        // Do a poor man's overloaded constructor *sigh*
+        // constructor() is valid, constructor(row, lengthRows) is vaild,
+        // and constructor(row, lengthBeats) is valid.
+        // isRows defines whether lengthRowsOrBeats refers to rows or not
+        if (startRow === undefined) {
+            super();
+            this.lengthRows = 0;
+            return;
+        }
+        if (lengthRowsOrBeats === undefined) {
+            throw new Error('invalid constructor used - must provide nothing, or both optinoal parameters');
+        }
+        super(startRow, true);
+        if (isRows) {
+            this.lengthRows = lengthRowsOrBeats;
+        } else {
+            this.lengthRows = NoteHelpers.beatToNoteRow(lengthRowsOrBeats);
+        }
+    }
+
+    public getType() { return TimingSegmentType.WARP; }
+    public getEffectType() { return SegmentEffectType.Range; }
+
+    public isNotable() { return this.lengthRows > 0; }
+
+    public getLengthRows() { return this.lengthRows; }
+    public getLengthBeats() { return NoteHelpers.noteRowToBeat(this.lengthRows); }
+    public getLength() { return this.getLengthBeats(); }
+
+    public setLengthRows(rows: number) { this.lengthRows = rows; }
+    public setLengthBeats(beats: number) { this.lengthRows = NoteHelpers.beatToNoteRow(beats); }
+
+    public scale(start: number, length: number, newLength: number) {
+        // XXX: this function is duplicated, there should be a better way
+        const startBeat    = this.getBeat();
+        const endBeat      = startBeat + this.getLength();
+        const newStartBeat = NoteHelpers.scalePosition(
+            NoteHelpers.noteRowToBeat(start),
+            NoteHelpers.noteRowToBeat(length),
+            NoteHelpers.noteRowToBeat(newLength),
+            startBeat);
+        const newEndBeat   = NoteHelpers.scalePosition(
+            NoteHelpers.noteRowToBeat(start),
+            NoteHelpers.noteRowToBeat(length),
+            NoteHelpers.noteRowToBeat(newLength),
+            endBeat);
+        this.setLengthBeats(newEndBeat - newStartBeat);
+        super.scale(start, length, newLength);
+    }
+
+    public debugPrint() {
+        const type = this.getType();
+        const row = this.getRow();
+        const beat = this.getBeat();
+        const lengthRows = this.getLengthRows();
+        const lengthBeats = this.getLengthBeats();
+        console.debug(`\t${type}(${row} [${beat}], ${lengthRows} [${lengthBeats}])`);
+    }
+    public toString(dec: number) {
+        const beat = this.getBeat().toFixed(dec);
+        const length = this.getLength();
+        return `${beat}=${length}`;
+    }
+
+    public getValues(): number[] {
+        return [this.getLength()];
+    }
+
+    public equals(other: TimingSegment): boolean {
+        if (this.getType() !== other.getType()) {
+            return false;
+        }
+
+        if (!(other instanceof WarpSegment)) {
+            return false;
+        }
+        // If they differ in length, return false
+        if (!TimingSegment.compareFloat(this.lengthRows, other.lengthRows)) {
+            return false;
+        }
+        return true;
+    }
+}
+
+/**
+ * Identifies when a song changes its time signature.
  *
  * This only supports simple time signatures. The upper number
  * (called the numerator here, though this isn't properly a
@@ -136,7 +232,12 @@ export class TimeSignatureSegment extends TimingSegment {
     }
 
     public debugPrint() {
-        console.debug(`\t${this.getType()}(${this.getRow()} [${this.getBeat()}], ${this.getNum()}/${this.getDen()})`);
+        const type = this.getType();
+        const row = this.getRow();
+        const beat = this.getBeat();
+        const num = this.getNum();
+        const den = this.getDen();
+        console.debug(`\t${type}(${row} [${beat}], ${num}/${den})`);
     }
     public toString(dec: number) {
         const beat = this.getBeat().toFixed(dec);
@@ -169,7 +270,111 @@ export class TimeSignatureSegment extends TimingSegment {
 }
 
 /**
- * @brief Identifies when a song has a delay, or pump style stop.
+ * Identifies when a song changes its BPM.
+ */
+export class BPMSegment extends TimingSegment {
+    /** The number of beats per second within this BPMSegment. */
+    private bps: number = 0;
+
+    constructor(startRow = ROW_INVALID, bpm = 0.0) {
+        super(startRow, true);
+        this.setBpm(bpm);
+    }
+
+    public getType() { return TimingSegmentType.BPM; }
+    public getEffectType() { return SegmentEffectType.Indefinite; }
+    public isNotable() { return true; } // indefinite segments are always true
+
+    public getBps() { return this.bps; }
+    public getBpm() { return this.bps * 60.0; }
+
+    public setBps(bps: number) { this.bps = bps; }
+    public setBpm(bpm: number) { this.bps = bpm / 60.0; }
+
+    public debugPrint() {
+        const type = this.getType();
+        const row = this.getRow();
+        const beat = this.getBeat();
+        const bpm = this.getBpm();
+        console.debug(`\t${type}(${row} [${beat}], ${bpm})`);
+    }
+
+    public toString(dec: number) {
+        const beat = this.getBeat().toFixed(dec);
+        const bpm = this.getBpm().toFixed(dec);
+        return `${beat}=${bpm}`;
+    }
+
+    public getValues(): number[] {
+        return [this.getBpm()];
+    }
+
+    public equals(other: TimingSegment): boolean {
+        if (this.getType() !== other.getType()) {
+            return false;
+        }
+
+        if (!(other instanceof BPMSegment)) {
+            return false;
+        }
+        // If they differ in bps, return false
+        if (!TimingSegment.compareFloat(this.bps, other.bps)) {
+            return false;
+        }
+        return true;
+    }
+}
+
+/**
+ * Identifies when a song has a stop, DDR/ITG style.
+ */
+export class StopSegment extends TimingSegment {
+    /** The number of seconds to pause at the segment's row. */
+    private seconds: number;
+
+    constructor(startRow = ROW_INVALID, seconds = 0.0) {
+        super(startRow, true);
+        this.seconds = seconds;
+    }
+
+    public getType() { return TimingSegmentType.STOP; }
+    public getEffectType() { return SegmentEffectType.Row; }
+    public isNotable() { return this.seconds > 0; } // indefinite segments are always true
+
+    public getPause() { return this.seconds; }
+    public setPause(seconds: number) { this.seconds = seconds; }
+
+    public debugPrint() {
+        const type = this.getType();
+        const row = this.getRow();
+        const beat = this.getBeat();
+        const pause = this.getPause();
+        console.debug(`\t${type}(${row} [${beat}], ${pause})`);
+    }
+    public toString(dec: number) {
+        const beat = this.getBeat().toFixed(dec);
+        const pause = this.getPause();
+        return `${beat}=${pause}`;
+    }
+
+    public getValues(): number[] {
+        return [this.getPause()];
+    }
+
+    public equals(other: TimingSegment): boolean {
+        if (this.getType() !== other.getType()) {
+            return false;
+        }
+
+        if (!(other instanceof StopSegment)) {
+            return false;
+        }
+        return TimingSegment.compareFloat(this.seconds, other.seconds);
+    }
+}
+
+/**
+ * Identifies when a song has a delay, or pump style stop.
  */
 export class DelaySegment extends TimingSegment {
     /** The number of seconds to pause at the segment's row. */
@@ -189,7 +394,11 @@ export class DelaySegment extends TimingSegment {
     public isNotable() { return this.seconds > 0; }
     public getValues() { return [this.getPause()]; }
     public debugPrint() {
-        console.debug(`\t${this.getType()}(${this.getRow()} [${this.getBeat()}], ${this.getPause()})`);
+        const type = this.getType();
+        const row = this.getRow();
+        const beat = this.getBeat();
+        const pause = this.getPause();
+        console.debug(`\t${type}(${row} [${beat}], ${pause})`);
     }
     public toString(dec: number) {
         const beat = this.getBeat().toFixed(dec);
