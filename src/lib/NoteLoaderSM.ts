@@ -469,7 +469,7 @@ export class NoteLoaderSM {
         // BPMs cause unpredictable behavior, so ignore them as well and issue a
         // warning.
         let bpmIndex = 0;
-        const bpmMax = bpms.length;
+        const bpmMax = bpms.length - 1;
         for (const bpmPair of bpms) {
             if (bpmPair[0] >= 0) {
                 break;
@@ -491,6 +491,8 @@ export class NoteLoaderSM {
             } else {
                 // Yep. Get the next BPM.
                 bpmIndex++;
+                // IMPORTANT: bug here such that the bpm doesn't have a second value
+                debugger;
                 bpm = bpms[bpmIndex][1];
                 console.debug('.sm data does not establish a BPM before beat 0. ' +
                               'Using the value from the next BPM change');

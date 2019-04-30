@@ -11,7 +11,7 @@ export class TimingData {
 
     constructor() {
         // TimingSegments has one array per valid TimingSegmentType enum
-        for (let i = 0; i < TimingSegmentType.NUM_TimingSegmentType; i++) {
+        for (let i = 0; i < TimingSegmentType.NUM; i++) {
             this.timingSegments.push([]);
         }
     }

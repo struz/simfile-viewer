@@ -41,9 +41,10 @@ describe('NoteLoaderSM', () => {
         expect(song.musicSampleLengthSec, 'musicSampleLength').to.equal(24);
         // We don't parse #SELECTABLE
         // TODO: for BPMs test all the different display types properly
-        expect(song.specifiedBpmMin, 'bpmMin').to.equal(140);
-        expect(song.specifiedBpmMax, 'bpmMax').to.equal(140);
-        expect(song.displayBpmType, 'bpmType').to.equal(DisplayBPM.SPECIFIED);
+        // 'Big Sky' doesn't have a #SPECIFIEDBPM tag so it uses ACTUAL
+        expect(song.specifiedBpmMin, 'specifiedBpmMin').to.equal(0);
+        expect(song.specifiedBpmMax, 'specifiedBpmMax').to.equal(0);
+        expect(song.displayBpmType, 'bpmType').to.equal(DisplayBPM.ACTUAL);
 
         // TODO: check stops properly
         // We don't parse #BGCHANGES
