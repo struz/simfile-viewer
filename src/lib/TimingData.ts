@@ -4,6 +4,7 @@ const INVALID_INDEX: number = -1;
 
 // Holds data for translating beats<->seconds.
 export class TimingData {
+    /** The initial offset of a song. */
     private beat0OffsetInSecs: number = 0;
     // All of the following vectors must be sorted before gameplay.
     private timingSegments: TimingSegment[][] = [];
@@ -13,6 +14,10 @@ export class TimingData {
         for (let i = 0; i < TimingSegmentType.NUM_TimingSegmentType; i++) {
             this.timingSegments.push([]);
         }
+    }
+
+    public adjustOffset(amount: number) {
+        this.setOffset(this.beat0OffsetInSecs + amount);
     }
 
     public setOffset(offset: number) {

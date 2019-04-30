@@ -3,6 +3,22 @@ import { StepsType, Difficulty } from './GameConstantsAndTypes';
 import Song from './Song';
 import TimingData from './TimingData';
 
+/**
+ * Enforce a limit on the number of chars for the description.
+ *
+ * In In The Groove, this limit was 12: we do not need such a limit now.
+ */
+export const MAX_STEPS_DESCRIPTION_LENGTH = 255;
+
+/** The different ways of displaying the BPM. */
+export enum DisplayBPM {
+    ACTUAL, /** Display the song's actual BPM. */
+    SPECIFIED, /** Display a specified value or values. */
+    RANDOM, /** Display a random selection of BPMs. */
+    NUM_DisplayBPM,
+    Invalid,
+}
+
 // Holds note information for a song
 export class Steps {
     public timingData: TimingData = new TimingData();

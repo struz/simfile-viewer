@@ -1,16 +1,26 @@
 // tslint:disable: no-console
 
 import MsdFile from './MsdFile';
-import Steps from './Steps';
+import Steps, { DisplayBPM } from './Steps';
 import Song from './Song';
-import { Helpers, Difficulty } from './GameConstantsAndTypes';
+import { Helpers, Difficulty, StepsTypeInfos } from './GameConstantsAndTypes';
 import TimingData from './TimingData';
-import NoteHelpers from './NoteTypes';
-import { DelaySegment } from './TimingSegments';
+import { ROWS_PER_BEAT, NoteHelpers } from './NoteTypes';
+import { TimeSignatureSegment, DelaySegment } from './TimingSegments';
+
+/**
+ * The highest allowable speed before Warps come in.
+ *
+ * This was brought in from StepMania 4's recent betas.
+ */
+const FAST_BPM_WARP = 9999999;
+
+/** The maximum file size for edits. */
+const MAX_EDIT_STEPS_SIZE_BYTES	= 60 * 1024; // 60KB
 
 // Functions used in function table below to set song data efficiently
 type SongTimingInfo = Array<{[key: number]: number}>;
-type SongParseFn = (smSongTagInfo: SongTagInfo) => void;
+type SongParseFn = (info: SongTagInfo) => void;
 
 interface SongTagInfo {
     song: Song;
@@ -19,149 +29,116 @@ interface SongTagInfo {
     stops: SongTimingInfo;
 }
 
-function SMSetTitle(smSongTagInfo: SongTagInfo) {
-    smSongTagInfo.song.mainTitle = smSongTagInfo.params[1];
+function SMSetTitle(info: SongTagInfo) {
+    info.song.mainTitle = info.params[1];
 }
 
-function SMSetSubtitle(smSongTagInfo: SongTagInfo) {
-    smSongTagInfo.song.subTitle = smSongTagInfo.params[1];
+function SMSetSubtitle(info: SongTagInfo) {
+    info.song.subTitle = info.params[1];
 }
 
-function SMSetArtist(smSongTagInfo: SongTagInfo) {
-    smSongTagInfo.song.artist = smSongTagInfo.params[1];
+function SMSetArtist(info: SongTagInfo) {
+    info.song.artist = info.params[1];
 }
 
-function SMSetTitleTranslit(smSongTagInfo: SongTagInfo) {
-    smSongTagInfo.song.mainTitleTranslit = smSongTagInfo.params[1];
+function SMSetTitleTranslit(info: SongTagInfo) {
+    info.song.mainTitleTranslit = info.params[1];
 }
 
-function SMSetSubtitleTranslit(smSongTagInfo: SongTagInfo) {
-    smSongTagInfo.song.subTitleTranslit = smSongTagInfo.params[1];
+function SMSetSubtitleTranslit(info: SongTagInfo) {
+    info.song.subTitleTranslit = info.params[1];
 }
 
-function SMSetArtistTranslit(smSongTagInfo: SongTagInfo) {
-    smSongTagInfo.song.artistTranslit = smSongTagInfo.params[1];
+function SMSetArtistTranslit(info: SongTagInfo) {
+    info.song.artistTranslit = info.params[1];
 }
-function SMSetGenre(smSongTagInfo: SongTagInfo) {
-    smSongTagInfo.song.genre = smSongTagInfo.params[1];
+function SMSetGenre(info: SongTagInfo) {
+    info.song.genre = info.params[1];
 }
-function SMSetCredit(smSongTagInfo: SongTagInfo) {
-    smSongTagInfo.song.credit = smSongTagInfo.params[1];
+function SMSetCredit(info: SongTagInfo) {
+    info.song.credit = info.params[1];
 }
-function SMSetBanner(smSongTagInfo: SongTagInfo) {
+function SMSetBanner(info: SongTagInfo) {
     console.debug('Skipping parsing banner');
 }
-function SMSetBackground(smSongTagInfo: SongTagInfo) {
+function SMSetBackground(info: SongTagInfo) {
     console.debug('Skipping parsing background file');
 }
-function SMSetLyricsPath(smSongTagInfo: SongTagInfo) {
+function SMSetLyricsPath(info: SongTagInfo) {
     console.debug('Skipping parsing lyrics path');
 }
-function SMSetCDTitle(smSongTagInfo: SongTagInfo) {
+function SMSetCDTitle(info: SongTagInfo) {
     console.debug('Skipping parsing CD title');
 }
-function SMSetMusic(smSongTagInfo: SongTagInfo) {
+function SMSetMusic(info: SongTagInfo) {
     console.debug('Skipping parsing music file');
 }
-function SMSetOffset(smSongTagInfo: SongTagInfo) {
-    smSongTagInfo.song.songTiming.setOffset(parseFloat(smSongTagInfo.params[1]));
+function SMSetOffset(info: SongTagInfo) {
+    info.song.songTiming.setOffset(Helpers.stringToFloat(info.params[1]));
 }
-function SMSetBPMs(smSongTagInfo: SongTagInfo) {
-    smSongTagInfo.bpmChanges = NoteLoaderSM.parseBpms(smSongTagInfo.params[1]);
+function SMSetBPMs(info: SongTagInfo) {
+    info.bpmChanges = [];
+    info.bpmChanges = NoteLoaderSM.parseBpms(info.params[1]);
 }
-function SMSetStops(smSongTagInfo: SongTagInfo) {
-    smSongTagInfo.stops = NoteLoaderSM.parseStops(smSongTagInfo.params[1]);
+function SMSetStops(info: SongTagInfo) {
+    info.stops = [];
+    info.stops = NoteLoaderSM.parseStops(info.params[1]);
 }
-function SMSetDelays(smSongTagInfo: SongTagInfo) {
-    smSongTagInfo.song.songTiming = NoteLoaderSM.processDelays(smSongTagInfo.params[1]);
+function SMSetDelays(info: SongTagInfo) {
+    NoteLoaderSM.processDelays(info.song.songTiming, info.params[1]);
 }
-function SMSetTimeSignatures(smSongTagInfo: SongTagInfo) {
-    // info.loader->ProcessTimeSignatures(info.song->m_SongTiming, (*info.params)[1]);
+function SMSetTimeSignatures(info: SongTagInfo) {
+    NoteLoaderSM.processTimeSignatures(info.song.songTiming, info.params[1]);
 }
-function SMSetTickCounts(smSongTagInfo: SongTagInfo) {
-    // info.loader->ProcessTickcounts(info.song->m_SongTiming, (*info.params)[1]);
+function SMSetTickCounts(info: SongTagInfo) {
+    NoteLoaderSM.processTickcounts(info.song.songTiming, info.params[1]);
 }
-function SMSetInstrumentTrack(smSongTagInfo: SongTagInfo) {
+function SMSetInstrumentTrack(info: SongTagInfo) {
+    // Implement this if it turns out to be important. It probably won't - Struz
     // info.loader->ProcessInstrumentTracks(*info.song, (*info.params)[1]);
 }
-function SMSetSampleStart(smSongTagInfo: SongTagInfo) {
-    // info.song->m_fMusicSampleStartSeconds = HHMMSSToSeconds((*info.params)[1]);
+function SMSetSampleStart(info: SongTagInfo) {
+    info.song.musicSampleStartSec = Helpers.HHMMSSToSeconds(info.params[1]);
 }
-function SMSetSampleLength(smSongTagInfo: SongTagInfo) {
-    // info.song->m_fMusicSampleLengthSeconds = HHMMSSToSeconds((*info.params)[1]);
+function SMSetSampleLength(info: SongTagInfo) {
+    info.song.musicSampleLengthSec = Helpers.HHMMSSToSeconds(info.params[1]);
 }
-function SMSetDisplayBPM(smSongTagInfo: SongTagInfo) {
-//   // #DISPLAYBPM:[xxx][xxx:xxx]|[*];
-//   if((*info.params)[1] == "*")
-//   { info.song->m_DisplayBPMType = DISPLAY_BPM_RANDOM; }
-//   else
-//   {
-//     info.song->m_DisplayBPMType = DISPLAY_BPM_SPECIFIED;
-//     info.song->m_fSpecifiedBPMMin = StringToFloat((*info.params)[1]);
-//     if((*info.params)[2].empty())
-//     { info.song->m_fSpecifiedBPMMax = info.song->m_fSpecifiedBPMMin; }
-//     else
-//     { info.song->m_fSpecifiedBPMMax = StringToFloat((*info.params)[2]); }
-//   }
+function SMSetDisplayBPM(info: SongTagInfo) {
+    // #DISPLAYBPM:[xxx][xxx:xxx]|[*];
+    if (info.params[1] == '*') {
+        info.song.displayBpmType = DisplayBPM.RANDOM;
+    } else {
+        info.song.displayBpmType = DisplayBPM.SPECIFIED;
+        info.song.specifiedBpmMin = Helpers.stringToFloat(info.params[1]);
+        // No max specified
+        if (info.params.length < 3 || info.params[2] === '') {
+            info.song.specifiedBpmMax = info.song.specifiedBpmMin;
+        } else {
+            info.song.specifiedBpmMax = Helpers.stringToFloat(info.params[2]);
+        }
+    }
 }
-function SMSetSelectable(smSongTagInfo: SongTagInfo) {
-//   Rage::ci_ascii_string valueName{ (*info.params)[1].c_str() };
-//   if (valueName == "YES")
-//   { 
-//     info.song->m_SelectionDisplay = info.song->SHOW_ALWAYS; 
-//   }
-//   else if(valueName == "NO")
-//   { 
-//     info.song->m_SelectionDisplay = info.song->SHOW_NEVER; 
-//   }
-//   // ROULETTE from 3.9. It was removed since UnlockManager can serve
-//   // the same purpose somehow. This, of course, assumes you're using
-//   // unlocks. -aj
-//   else if(valueName == "ROULETTE")
-//   { 
-//     info.song->m_SelectionDisplay = info.song->SHOW_ALWAYS; 
-//   }
-//   /* The following two cases are just fixes to make sure simfiles that
-// 	 * used 3.9+ features are not excluded here */
-//   else if(valueName == "ES" || valueName == "OMES")
-//   { 
-//     info.song->m_SelectionDisplay = info.song->SHOW_ALWAYS; 
-//   }
-//   else if(StringToInt((*info.params)[1]) > 0)
-//   {
-//     info.song->m_SelectionDisplay = info.song->SHOW_ALWAYS;
-//   }
-//   else
-//   {
-//     LOG->UserLog("Song file", info.path, "has an unknown #SELECTABLE value, \"%s\"; ignored.", (*info.params)[1].c_str());
-//   }
+function SMSetSelectable(info: SongTagInfo) {
+    // Implement this if it turns out to be important. It probably won't - Struz
 }
-function SMSetBGChanges(smSongTagInfo: SongTagInfo) {
+function SMSetBGChanges(info: SongTagInfo) {
+    // Implement this if it turns out to be important. It probably won't  - Struz
     // info.loader->ProcessBGChanges(*info.song, (*info.params)[0], info.path, (*info.params)[1]);
 }
-function SMSetFGChanges(smSongTagInfo: SongTagInfo) {
-    // auto aFGChangeExpressions = Rage::split((*info.params)[1], ",");
-
-    // for (auto &expression: aFGChangeExpressions)
-    // {
-    //     BackgroundChange change;
-    //     if(info.loader->LoadFromBGChangesString(change, expression))
-    //     info.song->AddForegroundChange(change);
-    // }
+function SMSetFGChanges(info: SongTagInfo) {
+   // Implement this if it turns out to be important. It probably won't - Struz
 }
-function SMSetKeysounds(smSongTagInfo: SongTagInfo) {
-    // // Do not assume it's empty.
-    // auto toDump = Rage::split((*info.params)[1], ",");
-    // auto &soundFiles = info.song->m_vsKeysoundFile;
-    // soundFiles.insert(soundFiles.end(), std::make_move_iterator(toDump.begin()), std::make_move_iterator(toDump.end()));
+function SMSetKeysounds(info: SongTagInfo) {
+    // Seems pretty useless for an online viewer - Struz
 }
-function SMSetAttacks(smSongTagInfo: SongTagInfo) {
+function SMSetAttacks(info: SongTagInfo) {
+    // I don't even know what attacks are - Struz
     // info.loader->ProcessAttackString(info.song->m_sAttackString, (*info.params));
     // info.loader->ProcessAttacks(info.song->m_Attacks, (*info.params));
 }
 
 // Function table for setting song data efficiently
-const parserHelper: Map<string, SongParseFn> = new Map([
+const songTagHandlers: Map<string, SongParseFn> = new Map([
     ['TITLE', SMSetTitle],
     ['SUBTITLE', SMSetSubtitle],
     ['ARTIST', SMSetArtist],
@@ -226,7 +203,7 @@ export class NoteLoaderSM {
             }
 
             const beat = this.rowToBeat(arrayBpmChangeValues[0], rowsPerBeat);
-            const newBpm = parseFloat(arrayBpmChangeValues[1]);
+            const newBpm = Helpers.stringToFloat(arrayBpmChangeValues[1]);
             if (newBpm === 0) {
                 console.error(`.sm file has a 0 BPM; ignored`);
                 continue;
@@ -253,7 +230,7 @@ export class NoteLoaderSM {
             }
 
             const freezeBeat = this.rowToBeat(arrayFreezeValues[0], rowsPerBeat);
-            const freezeSeconds = parseFloat(arrayFreezeValues[1]);
+            const freezeSeconds = Helpers.stringToFloat(arrayFreezeValues[1]);
             if (freezeSeconds === 0) {
                 console.error(`.sm file has a zero-length stop; ignored`);
                 continue;
@@ -265,12 +242,11 @@ export class NoteLoaderSM {
 
     /**
      * Process the Delay Segments from the string.
+     * @param out the TimingData being modified.
      * @param line the string in question.
      * @param rowsPerBeat the number of rows per beat for this purpose.
      */
-    public static processDelays(line: string, rowsPerBeat: number = -1): TimingData {
-        const timingData = new TimingData();
-
+    public static processDelays(out: TimingData, line: string, rowsPerBeat: number = -1): void {
         const arrayDelayExpressions = line.split(',');
         for (const expression of arrayDelayExpressions) {
             const arrayDelayValues = expression.split('=');
@@ -281,14 +257,295 @@ export class NoteLoaderSM {
             }
 
             const freezeBeat = this.rowToBeat(arrayDelayValues[0], rowsPerBeat);
-            const freezeSeconds = parseFloat(arrayDelayValues[1]);
+            const freezeSeconds = Helpers.stringToFloat(arrayDelayValues[1]);
             if (freezeSeconds <= 0) {
                 console.error(`.sm file has an invalid dealy at beat ${freezeBeat}, length ${freezeSeconds}}; ignored`);
                 continue;
             }
-            timingData.addSegment(new DelaySegment(NoteHelpers.beatToNoteRow(freezeBeat), freezeSeconds));
+            out.addSegment(new DelaySegment(NoteHelpers.beatToNoteRow(freezeBeat), freezeSeconds));
         }
-        return timingData;
+    }
+
+    /**
+     * @brief Process the Time Signature Segments from the string.
+     * @param out the TimingData being modified.
+     * @param line the string in question.
+     * @param rowsPerBeat the number of rows per beat for this purpose.
+     */
+    public static processTimeSignatures(out: TimingData, line: string, rowsPerBeat: number = -1): void {
+        const vs1 = line.split(',');
+        for (const s1 of vs1) {
+            const vs2 = s1.split('=');
+            if (vs2.length < 3) {
+                console.error(`.sm data has invalid time signature change with ${vs2.length} values, ignored`);
+                continue;
+            }
+
+            const beat = this.rowToBeat(vs2[0], rowsPerBeat);
+            const numerator = Helpers.stringToInt(vs2[1]);
+            const denominator = Helpers.stringToInt(vs2[2]);
+
+            if (beat < 0) {
+                console.error(`.sm data has invalid time signature change with beat ${beat}, ignored`);
+                continue;
+            }
+            if (numerator < 1) {
+// tslint:disable-next-line: max-line-length
+                console.error(`.sm data has invalid time signature change with beat ${beat}, numerator ${numerator}, ignored`);
+                continue;
+            }
+            if (denominator < 1) {
+// tslint:disable-next-line: max-line-length
+                console.error(`.sm data has invalid time signature change with beat ${beat}, denominator ${denominator}, ignored`);
+                continue;
+            }
+
+            out.addSegment(new TimeSignatureSegment(NoteHelpers.beatToNoteRow(beat), numerator, denominator));
+        }
+    }
+
+    /**
+     * Process the Tickcount Segments from the string.
+     * @param out the TimingData being modified.
+     * @param line the string in question.
+     * @param rowsPerBeat the number of rows per beat for this purpose.
+     */
+    public static processTickcounts(out: TimingData, line: string, rowsPerBeat: number = -1): void {
+        const arrayTickcountExpressions = line.split(',');
+        for (const expression of arrayTickcountExpressions) {
+            const arrayTickcountValues = expression.split('=');
+            if (arrayTickcountValues.length !== 2) {
+// tslint:disable-next-line: max-line-length
+                console.error(`.sm data has invalid #TICKCOUNTS value "${expression}" (must have exactly one "="), ignored`);
+                continue;
+            }
+
+            const tickcountBeat = this.rowToBeat(arrayTickcountValues[0], rowsPerBeat);
+            // TODO: emulate try/catch stuff
+            // This parseInt is intended, as the source code used it and not the helper function here
+            const ticks = parseInt(arrayTickcountValues[1], 10);
+            if (isNaN(ticks)) {
+                continue;
+            }
+            const clampedTicks = Helpers.clamp(ticks, 0, ROWS_PER_BEAT);
+            // TODO: actually add the segment - I'm getting fucking sick of these - Struz
+            // out.addSegment(new TickcountSegment(NoteHelpers.beatToNoteRow(tickcountBeat), ticks));
+        }
+    }
+
+    /**
+     * @brief Process BPM and stop segments from the data.
+     * @param out the TimingData being modified.
+     * @param vBPMs the vector of BPM changes.
+     * @param vStops the vector of stops.
+     */
+    public static processBpmsAndStops(out: TimingData, bpms: SongTimingInfo, stops: SongTimingInfo): void {
+        // Precondition: no BPM change or stop has 0 for its value (change.second).
+        //     (The ParseBPMs and ParseStops functions make sure of this.)
+        // Postcondition: all BPM changes, stops, and warps are added to the out
+        //     parameter, already sorted by beat.
+        // REMOVEME: Iterator declarations
+        // Current BPM (positive or negative)
+        let bpm = 0;
+        // Beat at which the previous timing change occurred
+        let prevbeat = 0;
+        // Start/end of current warp (-1 if not currently warping)
+        let warpstart = -1;
+        let warpend = -1;
+        // BPM prior to current warp, to detect if it has changed
+        let prewarpbpm = 0;
+        // How far off we have gotten due to negative changes
+        let timeofs = 0;
+
+        // Sort BPM changes and stops by beat. Order matters.
+        // TODO: Make sorted lists a precondition rather than sorting them here.
+        // The caller may know that the lists are sorted already (e.g. if
+        // loaded from cache).
+        // It's a list of pairs so we sort by the first value (beat).
+        const compareFirst = (a: { [key: number]: number }, b: { [key: number]: number }): number => a[0] - b[0];
+        bpms.sort(compareFirst);
+        stops.sort(compareFirst);
+
+        // NOTE: the following code was done with iterators in C++. This is my ugly interpretation.
+        // TODO: once the tests are working change this to be more JavaScript-ey
+
+        // Convert stops that come before beat 0.  All these really do is affect
+        // where the arrows are with respect to the music, i.e. the song offset.
+        // Positive stops subtract from the offset, and negative add to it.
+        let stopIndex = 0;
+        const stopMax = stops.length;
+        for (const stopPair of stops) {
+            if (stopPair[0] >= 0) {
+                break;
+            }
+            out.adjustOffset(-stopPair[1]);
+            stopIndex++;
+        }
+
+        // Get rid of BPM changes that come before beat 0.  Positive BPMs before
+        // the chart don't really do anything, so we just ignore them.  Negative
+        // BPMs cause unpredictable behavior, so ignore them as well and issue a
+        // warning.
+        let bpmIndex = 0;
+        const bpmMax = bpms.length;
+        for (const bpmPair of bpms) {
+            if (bpmPair[0] >= 0) {
+                break;
+            }
+            bpm = bpmPair[1];
+            if (bpm < 0 && bpmPair[1] < 0) {
+                console.debug('.sm data has a negative BPM prior to beat 0. These cause problems; ignoring.');
+            }
+            bpmIndex++; // Keep track of where we got to in negative bpms
+        }
+
+        // It's beat 0.  Do you know where your BPMs are?
+        if (bpm === 0) {
+            // Nope.  Can we just use the next BPM value?
+            if (bpmIndex === bpmMax) {
+                // Nope.
+                bpm = 60;
+                console.debug('.sm data has no valid BPMs. Defaulting to 60.');
+            } else {
+                // Yep. Get the next BPM.
+                bpmIndex++;
+                bpm = bpms[bpmIndex][1];
+                console.debug('.sm data does not establish a BPM before beat 0. ' +
+                              'Using the value from the next BPM change');
+            }
+        }
+        // We always want to have an initial BPM.  If we start out warping, this
+        // BPM will be added later.  If we start with a regular BPM, add it now.
+        if (bpm > 0 && bpm <= FAST_BPM_WARP) {
+            // IMPORTANT: Make BPMSegment a thing!!
+            // out.addSegment(new BPMSegment(NoteHelpers.beatToNoteRow(0), bpm));
+        }
+
+        // Iterate over all BPMs and stops in tandem
+        while (bpmIndex < bpmMax || stopIndex < stopMax) {
+            // Get the next change in order, with BPMs taking precedence
+            // when they fall on the same beat.
+            const changeIsBpm = (stopIndex === stopMax) || 
+                (bpmIndex !== bpmMax && bpms[bpmIndex][0] <= stops[stopIndex][0]);
+            const change = changeIsBpm ? bpms[bpmIndex] : stops[stopIndex];
+
+            // Calculate the effects of time at the current BPM.  "Infinite"
+            // BPMs (SM4 warps) imply that zero time passes, so skip this
+            // step in that case.
+            if (bpm <= FAST_BPM_WARP) {
+                timeofs += (change[0] - prevbeat) * 60 / bpm;
+
+                // If we were in a warp and it finished during this
+                // timeframe, create the warp segment.
+                if (warpstart >= 0 && bpm > 0 && timeofs > 0) {
+                    // timeofs represents how far past the end we are
+                    warpend = change[0] - (timeofs * bpm / 60);
+                    // IMPORTANT: make WarpSegment a thing
+                    // out.addSegment(new WarpSegment(NoteHelpers.beatToNoteRow(warpstart),
+                    //     warpend - warpstart));
+
+                    // If the BPM changed during the warp, put that
+                    // change at the beginning of the warp.
+                    if (bpm !== prewarpbpm) {
+                        // IMPORTANT: make BPMSegment a thing
+                        //out.addSegment(new BPMSegment(NoteHelpers.beatToNoteRow(warpstart), bpm));
+                    }
+                    // No longer warping
+                    warpstart = -1;
+                }
+            }
+
+            // Save the current beat for the next round of calculations
+            prevbeat = change[0];
+
+            // Now handle the timing changes themselves
+            if (changeIsBpm) {
+                // Does this BPM change start a new warp?
+                if (warpstart < 0 && (change[1] < 0 || change[1] > FAST_BPM_WARP)) {
+                    // Yes.
+                    warpstart = change[0];
+                    prewarpbpm = bpm;
+                    timeofs = 0;
+                } else if (warpstart < 0) {
+                    // No, and we aren't currently warping either.
+                    // Just a normal BPM change.
+                    // IMPORTANT: BPMSegment
+                    // out.addSegment(new BPMSegment(NoteHelpers.beatToNoteRow(change[0]), change[1]));
+                }
+                bpm = change[1];
+                bpmIndex++;
+            } else {
+                // Does this stop start a new warp?
+                if (warpstart < 0 && change[1] < 0) {
+                    // Yes.
+                    warpstart = change[0];
+                    prewarpbpm = bpm;
+                    timeofs = change[1];
+                } else if (warpstart < 0) {
+                    // No, and we aren't currently warping either.
+                    // Just a normal stop.
+                    // IMPORTANT: make StopSegment a thing
+                    // out.addSegment(new StopSegment(NoteHelpers.beatToNoteRow(change[0]), change[1]));
+                } else {
+                    // We're warping already. Stops affect the time
+                    // offset directly.
+                    timeofs += change[1];
+
+                    // If a stop overcompensates for the time
+                    // deficit, the warp ends and we stop for the
+                    // amount it goes over.
+                    if (change[1] > 0 && timeofs > 0) {
+                        warpend = change[0];
+                        // IMPORTANT: yada yada segments
+                        // out.addSegment(new WarpSegment(NoteHelpers.beatToNoteRow(warpstart), warpend - warpstart));
+                        // out.addSegment(new StopSegment(NoteHelpers.beatToNoteRow(change[0]), timeofs));
+
+                        // Now, are we still warping because of
+                        // the BPM value?
+                        if (bpm < 0 || bpm > FAST_BPM_WARP) {
+                            // Yep.
+                            warpstart = change[0];
+                            // prewarpbpm remains the same
+                            timeofs = 0;
+                        } else {
+                            // Nope, warp is done.  Add any
+                            // BPM change that happened in
+                            // the meantime.
+                            if (bpm !== prewarpbpm) {
+                                // IMPORTANT: yada yada segments
+                                // out.addSegment(new WarpSegment(NoteHelpers.beatToNoteRow(warpstart), bpm));
+                            }
+                            warpstart = -1;
+                        }
+                    }
+                }
+                stopIndex++;
+            }
+        }
+
+        // If we are still warping, we now have to consider the time remaining
+        // after the last timing change.
+        if (warpstart >= 0) {
+            // Will this warp ever end?
+            if (bpm < 0 || bpm > FAST_BPM_WARP) {
+                // No, so it ends the entire chart immediately.
+                // XXX There must be a less hacky and more accurate way
+                // to do this.
+                warpend = 99999999;
+            } else {
+                // Yes. Figure out when it will end.
+                warpend = prevbeat - (timeofs * bpm / 60);
+            }
+            // IMPORTANT: yada WarpSegment
+            // out.addSegment(new WarpSegment(NoteHelpers.beatToNoteRow(warpstart),
+            //     warpend - warpstart));
+
+            // As usual, record any BPM change that happened during the warp
+            if (bpm !== prewarpbpm) {
+                // IMPORTANT: yada BPMSegment
+                //out.addSegment(new BPMSegment(NoteHelpers.beatToNoteRow(warpstart), bpm));
+            }
+        }
     }
 
     /**
@@ -305,25 +562,37 @@ export class NoteLoaderSM {
         const backup = line.replace(/^[rR]+|[rR]+$/g, '');
         // If r or R were present, there's multiple rows per beat
         if (backup !== line) {
-            return parseFloat(line) / rowsPerBeat;
+            return Helpers.stringToFloat(line) / rowsPerBeat;
         }
-        return parseFloat(line);
+        return Helpers.stringToFloat(line);
     }
 
     public static loadFromSimfile(msdFile: MsdFile): Song {
         const song = new Song();
+
+        const reusedSongInfo: SongTagInfo = {
+            song,
+            params: [],
+            bpmChanges: [],
+            stops: [],
+        };
+
         for (let i = 0; i < msdFile.getNumValues(); i++) {
             const numParams = msdFile.getNumParams(i);
             const params = msdFile.getValue(i);
             const valueName = params[0].toUpperCase();
-            // TODO: based on tag name, do something different to parse it
+            reusedSongInfo.params = params; // Ensure we're passing params in
+            // IMPORTANT: based on tag name, do something different to parse it
             // In StepMania they use a map of functions?
+            // IMPORTANT: we have the functions now - USE THEM
             // TODO: what is the difference betwen NotesLoaderSM::LoadFromSimfile and ::LoadNotesFromSimfile?
             // - LoadFromSimfile produces a Song
 
-            // TODO: parse all the things they have a function for in StepMania *sigh*
-            // TODO: parse BGCHANGES.* (or not)
-            if (valueName === 'NOTES' || valueName === 'NOTES2') {
+            const handler = songTagHandlers.get(valueName);
+            if (handler !== undefined) {
+                handler(reusedSongInfo);
+                // We ignore #BGCHANGES.* because we don't care about backgrounds
+            } else if (valueName === 'NOTES' || valueName === 'NOTES2') {
                 if (numParams < 7) {
                     throw new Error(`.sm file has ${numParams} fields in a #NOTES tag, but should have at least 7.`);
                 }
@@ -341,6 +610,12 @@ export class NoteLoaderSM {
         if (!song.hasSteps()) {
             throw new Error('did not find step data for song');
         }
+        // IMPORTANT: processbpm
+        // IMPORTANT: write my own cascade of tidyUpData() functions and call them here
+        // Cut out any things that aren't necessary.
+        // Line 633 in Song.cpp is the motherload.
+        // Read this file carefully! It has gems like not allowing multiple steps of the same StepsType and Difficulty.
+
         return song;
     }
 
@@ -426,7 +701,7 @@ export class NoteLoaderSM {
         if (meter.length === 0) {
             meter = '1';
         }
-        steps.meter = parseInt(meter, 10);
+        steps.meter = Helpers.stringToInt(meter);
 
         return steps;
     }

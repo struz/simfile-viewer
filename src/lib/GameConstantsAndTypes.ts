@@ -197,5 +197,46 @@ export class Helpers {
         }
         return difficulty;
     }
+
+    public static HHMMSSToSeconds(HHMMSS: string) {
+        const arrayBits = HHMMSS.split(':');
+        while (arrayBits.length < 3) {
+            arrayBits.splice(0, 0, '0'); // pad missing bits
+        }
+        let seconds = 0;
+        seconds += this.stringToInt(arrayBits[0]) * 60 * 60;
+        seconds += this.stringToInt(arrayBits[1]) * 60;
+        seconds += this.stringToFloat(arrayBits[2]);
+        return seconds;
+    }
+
+    /** Clamp a number to be between min and max. */
+    public static clamp(num: number, min: number, max: number): number {
+        return Math.min(Math.max(num, min), max);
+    }
+
+    // StringToInt and StringToFloat are wrappers around std::stoi and std::stof
+    // which handle the exception by returning 0.  Reporting the exception would
+    // be cumbersome, and there are probably a million things that rely on an
+    // "invalid" string being silently converted to 0.  This includes cases where
+    // someone uses an empty string and expects it to come out 0, probably
+    // frequently used in metrics. -Kyz
+
+    /** Like parseInt(x, 10) but instead of NaN it returns 0. */
+    public static stringToInt(str: string) {
+        const int = parseInt(str, 10);
+        if (isNaN(int)) {
+            return 0;
+        }
+        return int;
+    }
+    /** Like parseFloat(x) but instead of NaN it returns 0. */
+    public static stringToFloat(str: string) {
+        const float = parseFloat(str);
+        if (isNaN(float)) {
+            return 0.0;
+        }
+        return float;
+    }
 }
 export default Helpers;

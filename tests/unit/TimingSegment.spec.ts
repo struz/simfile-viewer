@@ -1,7 +1,7 @@
 // tslint:disable: max-line-length
 
 import { expect } from 'chai';
-import { TimingSegment } from '../../src/lib/TimingSegments';
+import { TimingSegment } from '@/lib/TimingSegments';
 
 describe('TimingSegment compareFloat', () => {
   it('compares defined floats correctly', () => {

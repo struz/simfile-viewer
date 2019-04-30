@@ -90,6 +90,87 @@ export abstract class TimingSegment {
     }
 }
 
+/**
+ * @brief Identifies when a song changes its time signature.
+ *
+ * This only supports simple time signatures. The upper number
+ * (called the numerator here, though this isn't properly a
+ * fraction) is the number of beats per measure. The lower number
+ * (denominator here) is the note value representing one beat.
+ */
+export class TimeSignatureSegment extends TimingSegment {
+    private numerator: number;
+    private denominator: number;
+
+    constructor(startRow = ROW_INVALID, numerator = 4, denominator = 4) {
+        super(startRow, true);
+        this.numerator = numerator;
+        this.denominator = denominator;
+    }
+
+    public getType() { return TimingSegmentType.TIME_SIG; }
+    public getEffectType() { return SegmentEffectType.Indefinite; }
+
+    public isNotable() { return true; } // indefinite segments are always true
+
+    public getNum() { return this.numerator; }
+    public setNum(num: number) { this.numerator = num; }
+
+    public getDen() { return this.denominator; }
+    public setDen(den: number) { this.denominator = den; }
+
+    public set(num: number, den: number) { this.numerator = num; this.denominator = den; }
+
+    /**
+     * Retrieve the number of note rows per measure within the TimeSignatureSegment.
+     *
+     * With BeatToNoteRow(1) rows per beat, then we should have BeatToNoteRow(1)*m_iNumerator
+     * beats per measure. But if we assume that every BeatToNoteRow(1) rows is a quarter note,
+     * and we want the beats to be 1/m_iDenominator notes, then we should have
+     * BeatToNoteRow(1)*4 is rows per whole note and thus BeatToNoteRow(1)*4/m_iDenominator is
+     * rows per beat. Multiplying by m_iNumerator gives rows per measure.
+     * @returns the number of note rows per measure.
+     */
+    public getNoteRowsPerMeasure() {
+        return NoteHelpers.beatToNoteRow(1) * 4 * this.numerator / this.denominator;
+    }
+
+    public debugPrint() {
+        console.debug(`\t${this.getType()}(${this.getRow()} [${this.getBeat()}], ${this.getNum()}/${this.getDen()})`);
+    }
+    public toString(dec: number) {
+        const beat = this.getBeat().toFixed(dec);
+        const num = this.getNum();
+        const den = this.getDen();
+        return `${beat}=${num}=${den}`;
+    }
+
+    public getValues(): number[] {
+        return [this.getNum(), this.getDen()];
+    }
+
+    public equals(other: TimingSegment): boolean {
+        if (this.getType() !== other.getType()) {
+            return false;
+        }
+
+        if (!(other instanceof TimeSignatureSegment)) {
+            return false;
+        }
+        // If they differ in either numerator or denominator, return false
+        if (!TimingSegment.compareFloat(this.numerator, other.numerator)) {
+            return false;
+        }
+        if (!TimingSegment.compareFloat(this.denominator, other.denominator)) {
+            return false;
+        }
+        return true;
+    }
+}
+
+/**
+ * @brief Identifies when a song has a delay, or pump style stop.
+ */
 export class DelaySegment extends TimingSegment {
     /** The number of seconds to pause at the segment's row. */
     private seconds: number = -1;

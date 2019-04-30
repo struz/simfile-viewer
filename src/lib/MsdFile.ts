@@ -33,7 +33,6 @@ export class MsdFile {
         let i: number = 0;
         let currentParam: string[] = [];
 
-// tslint:disable-next-line: prefer-for-of
         while (i < buf.length) {
             // Detect and skip comments - from // onwards in a line
             if (i + 1 < buf.length && buf[i] === '/' && buf[i + 1] === '//') {
@@ -43,6 +42,9 @@ export class MsdFile {
                 while (i < buf.length && buf[i] !== '\n');
                 continue;
             }
+
+            // IMPORTANT: files missing ';'s
+            // stretch goal
 
             // Start reading a new value
             if (!readingValue && buf[i] === '#') {
@@ -60,7 +62,8 @@ export class MsdFile {
             }
 
             // : and ; end the current param, if any
-            if (currentParam.length > 0 && (buf[i] === ':' || buf[i] === ';')) {
+            // NOTE: the C++ code has an extra `iProcessedLen != -1` guard which we have removed
+            if (buf[i] === ':' || buf[i] === ';') {
                 this.addParam(currentParam);
             }
 

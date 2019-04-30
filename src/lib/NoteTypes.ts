@@ -5,14 +5,14 @@
  * This is a divisor for our "fixed-point" time/beat representation. It must be
  * evenly divisible by 2, 3, and 4, to exactly represent 8th, 12th and 16th notes.
  */
-const ROWS_PER_BEAT: number = 48;
+export const ROWS_PER_BEAT: number = 48;
 
 /** The max number of rows allowed for a Steps pattern. */
 // tslint:disable-next-line: no-bitwise
-const MAX_NOTE_ROW: number = (1 << 30);
+export const MAX_NOTE_ROW: number = (1 << 30);
 
 /** The list of quantized note types allowed at present. */
-enum NoteType {
+export enum NoteType {
     NOTE_TYPE_4TH,	 /** quarter note */
     NOTE_TYPE_8TH,	 /** eighth note */
     NOTE_TYPE_12TH,	 /** quarter note triplet */

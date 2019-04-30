@@ -27,7 +27,7 @@ export class Song {
     public musicLengthSec = 0;
     public musicSampleStartSec = 0;
     public musicSampleLengthSec = 0;
-    public displayBpm = 0;  // An enum, not sure how I'll handle this yet
+    public displayBpmType = 0;  // An enum, not sure how I'll handle this yet
     public specifiedBpmMin = 0;
     public specifiedBpmMax = 0;
 
@@ -54,7 +54,6 @@ export class Song {
     private unknownStyleSteps = 'placeholder unknown style steps';
 
     constructor() {
-        // TODO: initialize the step data with the enum
         this.stepsByType = [];
         for (let i = 0; i < StepsType.NUM_StepsType; i++) {
             this.stepsByType[i] = [];
