@@ -50,7 +50,7 @@ export enum StepsType {
     kickbox_quadarm,
     kickbox_insect,
     kickbox_arachnid,
-    NUM_StepsType, 	// leave this at the end
+    NUM, 	// leave this at the end
     Invalid,
 }
 
@@ -64,17 +64,13 @@ export class StepsTypeInfo {
     public allowAutogen: boolean;
     // The most basic StyleType that this StpesTypeInfo is used with.
     public stepsTypeCategory: StepsTypeCategory;
-    // The associated ID of this StepType
-    public stepsType: StepsType;
 
     constructor(stepTypeName: string, numTracks: number,
-                allowAutogen: boolean, stepsTypeCategory: StepsTypeCategory,
-                stepsType: StepsType) {
+                allowAutogen: boolean, stepsTypeCategory: StepsTypeCategory) {
         this.stepTypeName = stepTypeName;
         this.numTracks = numTracks;
         this.allowAutogen = allowAutogen;
         this.stepsTypeCategory = stepsTypeCategory;
-        this.stepsType = stepsType;
     }
 
     public toString(): string {
@@ -86,60 +82,60 @@ export class StepsTypeInfo {
 // GameManager.cpp at line 50, commit b95e49216eb2974b8e0f69b6603595df1c698ccd
 // The indexes here must match the indexes in the enum.
 // TODO: this is really ugly without the full enum names linked here - Fix when have time.
-export const StepsTypeInfos: Map<string, StepsTypeInfo> = new Map([
+export const StepsTypeInfos: StepsTypeInfo[] = [
     // dance
-    ['dance-single', new StepsTypeInfo('dance-single', 4, true, StepsTypeCategory.Single, StepsType.dance_single)],
-    ['dance-double', new StepsTypeInfo('dance-double', 8, true, StepsTypeCategory.Double, StepsType.dance_double)],
-    ['dance-couple', new StepsTypeInfo('dance-couple', 8, true, StepsTypeCategory.Couple, StepsType.dance_couple)],
-    ['dance-solo', new StepsTypeInfo('dance-solo', 6, true, StepsTypeCategory.Single, StepsType.dance_solo)],
-    ['dance-threepanel', new StepsTypeInfo('dance-threepanel', 3, true, StepsTypeCategory.Single, 4)], // thanks to kurisu
-    ['dance-routine', new StepsTypeInfo('dance-routine', 8, false, StepsTypeCategory.Routine, 5)],
+    new StepsTypeInfo('dance-single', 4, true, StepsTypeCategory.Single),
+    new StepsTypeInfo('dance-double', 8, true, StepsTypeCategory.Double),
+    new StepsTypeInfo('dance-couple', 8, true, StepsTypeCategory.Couple),
+    new StepsTypeInfo('dance-solo', 6, true, StepsTypeCategory.Single),
+    new StepsTypeInfo('dance-threepanel', 3, true, StepsTypeCategory.Single), // thanks to kurisu
+    new StepsTypeInfo('dance-routine', 8, false, StepsTypeCategory.Routine),
     // pump
-    ['pump-single', new StepsTypeInfo('pump-single', 5, true, StepsTypeCategory.Single, 6)],
-    ['pump-halfdouble', new StepsTypeInfo('pump-halfdouble', 6, true, StepsTypeCategory.Double, 7)],
-    ['pump-double', new StepsTypeInfo('pump-double', 10, true, StepsTypeCategory.Double, 8)],
-    ['pump-couple', new StepsTypeInfo('pump-couple', 10, true, StepsTypeCategory.Couple, 9)],
+    new StepsTypeInfo('pump-single', 5, true, StepsTypeCategory.Single),
+    new StepsTypeInfo('pump-halfdouble', 6, true, StepsTypeCategory.Double),
+    new StepsTypeInfo('pump-double', 10, true, StepsTypeCategory.Double),
+    new StepsTypeInfo('pump-couple', 10, true, StepsTypeCategory.Couple),
     // uh, dance-routine has that one bool as false... wtf? -aj
-    ['pump-routine', new StepsTypeInfo('pump-routine', 10, true, StepsTypeCategory.Routine, 10)],
+    new StepsTypeInfo('pump-routine', 10, true, StepsTypeCategory.Routine),
     // kb7
-    ['kb7-single', new StepsTypeInfo('kb7-single', 7, true, StepsTypeCategory.Single, 11)],
-    // ['kb7-small', new StepsTypeInfo('kb7-small', 7, true, StepsTypeCategory.Single, 12)],
+    new StepsTypeInfo('kb7-single', 7, true, StepsTypeCategory.Single),
+    // new StepsTypeInfo('kb7-small', 7, true, StepsTypeCategory.Single),
     // ez2dancer
-    ['ez2-single', new StepsTypeInfo('ez2-single', 5, true, StepsTypeCategory.Single, 12)], // Single: TL,LHH,D,RHH,TR
-    ['ez2-double', new StepsTypeInfo('ez2-double', 10, true, StepsTypeCategory.Double, 13)], // Double: Single x2
-    ['ez2-real', new StepsTypeInfo('ez2-real', 7, true, StepsTypeCategory.Single, 14)], // Real: TL,LHH,LHL,D,RHL,RHH,TR
+    new StepsTypeInfo('ez2-single', 5, true, StepsTypeCategory.Single), // Single: TL,LHH,D,RHH,TR
+    new StepsTypeInfo('ez2-double', 10, true, StepsTypeCategory.Double), // Double: Single x2
+    new StepsTypeInfo('ez2-real', 7, true, StepsTypeCategory.Single), // Real: TL,LHH,LHL,D,RHL,RHH,TR
     // parapara paradise
-    ['para-single', new StepsTypeInfo('para-single', 5, true, StepsTypeCategory.Single, 15)],
+    new StepsTypeInfo('para-single', 5, true, StepsTypeCategory.Single),
     // ds3ddx
-    ['ds3ddx-single', new StepsTypeInfo('ds3ddx-single', 8, true, StepsTypeCategory.Single, 16)],
+    new StepsTypeInfo('ds3ddx-single', 8, true, StepsTypeCategory.Single),
     // beatmania
-    ['bm-single5', new StepsTypeInfo('bm-single5', 6, true, StepsTypeCategory.Single, 17)], // called "bm" for backward compat
-    ['bm-versus5', new StepsTypeInfo('bm-versus5', 6, true, StepsTypeCategory.Single, 18)], // called "bm" for backward compat
-    ['bm-double5', new StepsTypeInfo('bm-double5', 12, true, StepsTypeCategory.Double, 19)], // called "bm" for backward compat
-    ['bm-single7', new StepsTypeInfo('bm-single7', 8, true, StepsTypeCategory.Single, 20)], // called "bm" for backward compat
-    ['bm-versus7', new StepsTypeInfo('bm-versus7', 8, true, StepsTypeCategory.Single, 21)], // called "bm" for backward compat
-    ['bm-double7', new StepsTypeInfo('bm-double7', 16, true, StepsTypeCategory.Double, 22)], // called "bm" for backward compat
+    new StepsTypeInfo('bm-single5', 6, true, StepsTypeCategory.Single), // called "bm" for backward compat
+    new StepsTypeInfo('bm-versus5', 6, true, StepsTypeCategory.Single), // called "bm" for backward compat
+    new StepsTypeInfo('bm-double5', 12, true, StepsTypeCategory.Double), // called "bm" for backward compat
+    new StepsTypeInfo('bm-single7', 8, true, StepsTypeCategory.Single), // called "bm" for backward compat
+    new StepsTypeInfo('bm-versus7', 8, true, StepsTypeCategory.Single), // called "bm" for backward compat
+    new StepsTypeInfo('bm-double7', 16, true, StepsTypeCategory.Double), // called "bm" for backward compat
     // dance maniax
-    ['maniax-single', new StepsTypeInfo('maniax-single', 4, true, StepsTypeCategory.Single, 23)],
-    ['maniax-double', new StepsTypeInfo('maniax-double', 8, true, StepsTypeCategory.Double, 24)],
+    new StepsTypeInfo('maniax-single', 4, true, StepsTypeCategory.Single),
+    new StepsTypeInfo('maniax-double', 8, true, StepsTypeCategory.Double),
     // technomotion
-    ['techno-single4', new StepsTypeInfo('techno-single4', 4, true, StepsTypeCategory.Single, 25)],
-    ['techno-single5', new StepsTypeInfo('techno-single5', 5, true, StepsTypeCategory.Single, 26)],
-    ['techno-single8', new StepsTypeInfo('techno-single8', 8, true, StepsTypeCategory.Single, 27)],
-    ['techno-double4', new StepsTypeInfo('techno-double4', 8, true, StepsTypeCategory.Double, 28)],
-    ['techno-double5', new StepsTypeInfo('techno-double5', 10, true, StepsTypeCategory.Double, 29)],
-    ['techno-double8', new StepsTypeInfo('techno-double8', 16, true, StepsTypeCategory.Double, 30)],
+    new StepsTypeInfo('techno-single4', 4, true, StepsTypeCategory.Single),
+    new StepsTypeInfo('techno-single5', 5, true, StepsTypeCategory.Single),
+    new StepsTypeInfo('techno-single8', 8, true, StepsTypeCategory.Single),
+    new StepsTypeInfo('techno-double4', 8, true, StepsTypeCategory.Double),
+    new StepsTypeInfo('techno-double5', 10, true, StepsTypeCategory.Double),
+    new StepsTypeInfo('techno-double8', 16, true, StepsTypeCategory.Double),
     // pop'n music
-    ['pnm-five', new StepsTypeInfo('pnm-five', 5, true, StepsTypeCategory.Single, 31)], // called "pnm" for backward compat
-    ['pnm-nine', new StepsTypeInfo('pnm-nine', 9, true, StepsTypeCategory.Single, 32)], // called "pnm" for backward compat
+    new StepsTypeInfo('pnm-five', 5, true, StepsTypeCategory.Single), // called "pnm" for backward compat
+    new StepsTypeInfo('pnm-nine', 9, true, StepsTypeCategory.Single), // called "pnm" for backward compat
     // cabinet lights and other fine StepsTypes that don't exist lol
-    ['lights-cabinet', new StepsTypeInfo('lights-cabinet', 6, false, StepsTypeCategory.Single, 33)], // XXX disable lights autogen for now
+    new StepsTypeInfo('lights-cabinet', 6, false, StepsTypeCategory.Single), // XXX disable lights autogen for now
     // kickbox mania
-    ['kickbox-human', new StepsTypeInfo('kickbox-human', 4, true, StepsTypeCategory.Single, 34)],
-    ['kickbox-quadarm', new StepsTypeInfo('kickbox-quadarm', 4, true, StepsTypeCategory.Single, 35)],
-    ['kickbox-insect', new StepsTypeInfo('kickbox-insect', 6, true, StepsTypeCategory.Single, 36)],
-    ['kickbox-arachnid', new StepsTypeInfo('kickbox-arachnid', 8, true, StepsTypeCategory.Single, 37)],
-]);
+    new StepsTypeInfo('kickbox-human', 4, true, StepsTypeCategory.Single),
+    new StepsTypeInfo('kickbox-quadarm', 4, true, StepsTypeCategory.Single),
+    new StepsTypeInfo('kickbox-insect', 6, true, StepsTypeCategory.Single),
+    new StepsTypeInfo('kickbox-arachnid', 8, true, StepsTypeCategory.Single),
+];
 
 // TODO: pull difficulty stuff into another file
 // Player number stuff
@@ -150,7 +146,7 @@ export enum Difficulty {
     Hard,
     Challenge,
     Edit,
-    NUM_Difficulty,
+    NUM,
     Invalid,
 }
 
@@ -182,12 +178,20 @@ const MAX_METER = 35;
 // Disabled so we can group collective things up in this file
 // tslint:disable-next-line: max-classes-per-file
 export class Helpers {
-    public static StringToStepsType(stepsType: string): StepsType {
-        const stepsTypeInfo = StepsTypeInfos.get(stepsType);
-        if (stepsTypeInfo === undefined) {
-            return StepsType.Invalid;
+    public static stringToStepsType(stepsType: string): StepsType {
+        for (let i = 0; i < StepsTypeInfos.length; i++) {
+            if (StepsTypeInfos[i].stepTypeName === stepsType) {
+                return i;
+            }
         }
-        return stepsTypeInfo.stepsType;
+        return StepsType.Invalid;
+    }
+
+    public static getStepsTypeInfo(st: StepsType) {
+        if (st >= StepsType.NUM) {
+            throw new Error(`getStepsTypeInfo(): Invalid steps type index ${st}`);
+        }
+        return StepsTypeInfos[st];
     }
 
     public static oldStyleStringToDifficulty(oldDifficulty: string): Difficulty {

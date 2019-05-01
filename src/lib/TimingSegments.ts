@@ -1,6 +1,5 @@
 // Various structures to deal with segments of songs that have different timings
 // tslint:disable: max-classes-per-file
-// tslint:disable: no-console
 
 import NoteHelpers from './NoteTypes';
 
@@ -52,7 +51,7 @@ export abstract class TimingSegment {
 
     constructor(beatOrRow = ROW_INVALID, isRow = true) {
         // If it's a row, store it, otherwise convert it to a row
-        this.startRow = (isRow ? beatOrRow : NoteHelpers.beatToNoteRow(beatOrRow))
+        this.startRow = (isRow ? beatOrRow : NoteHelpers.beatToNoteRow(beatOrRow));
     }
 
     public abstract getType(): TimingSegmentType;

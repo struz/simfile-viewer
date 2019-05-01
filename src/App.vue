@@ -21,22 +21,18 @@
   </v-app>
 </template>
 
-<script>
-import HelloWorld from './components/HelloWorld'
-import MsdFile from './lib/MsdFile'
-
-let a = new MsdFile("abcd\nefg");
-window.a = a;
+<script lang="ts">
+import HelloWorld from './components/HelloWorld.vue';
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    HelloWorld,
   },
-  data () {
+  data() {
     return {
       //
-    }
-  }
-}
+    };
+  },
+};
 </script>

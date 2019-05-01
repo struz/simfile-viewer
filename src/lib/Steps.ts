@@ -1,7 +1,8 @@
 import NoteData from './NoteData';
-import { StepsType, Difficulty } from './GameConstantsAndTypes';
+import Helpers, { StepsType, Difficulty } from './GameConstantsAndTypes';
 import Song from './Song';
 import TimingData from './TimingData';
+import { NoteDataUtil } from './NoteDataUtil';
 
 /**
  * Enforce a limit on the number of chars for the description.
@@ -15,18 +16,25 @@ export enum DisplayBPM {
     ACTUAL, /** Display the song's actual BPM. */
     SPECIFIED, /** Display a specified value or values. */
     RANDOM, /** Display a random selection of BPMs. */
-    NUM_DisplayBPM,
+    NUM,
     Invalid,
 }
 
-// Holds note information for a song
+/**
+ * Holds note information for a Song.
+ * A Song may have one or more Notes.
+ */
 export class Steps {
+    /**
+     * The TimingData used by the Steps.
+     * This is required to allow Split Timing.
+     */
     public timingData: TimingData = new TimingData();
     // Type info for these steps
     public stepsType: StepsType = StepsType.Invalid;
-    // Name of steps type - for dealing with unrecognized strings
+    /** The string form of the StepsType, for dealing with unrecognized styles. */
     public stepsTypeName: string = '';
-    // Song these steps are associated with
+    /** The Song these Steps are associated with */
     public song: Song = new Song();
 
     // The name of the edit, or some other useful description.
@@ -52,15 +60,30 @@ export class Steps {
     public specifiedBpmMax: number = -1;
 
     // Note data for the song
-    private noteData: NoteData;
+    private noteData: NoteData = new NoteData();
+    // Compressed note data for the song
+    private noteDataCompressed: string;
+    private noteDataIsFilled: boolean = false;
 
     constructor(noteData: string) {
-        this.noteData = new NoteData(noteData);
-        // TODO: parse note data, we don't do compressed
+        this.noteDataCompressed = noteData;
     }
 
-    public getNoteData(): NoteData {
-        return this.noteData;
+    public getNoteData() { return this.noteData; }
+    public getCompressedNoteData() { return this.noteDataCompressed; }
+    public isNoteDataFilled() { return this.noteDataIsFilled; }
+
+    public decompress() {
+        if (this.noteDataIsFilled) {
+            return; // already decompressed
+        }
+
+        // load from compressed
+        // Omitted composite - not supporting (for now) - Struz
+        this.noteDataIsFilled = true;
+        this.noteData.setNumTracks(Helpers.getStepsTypeInfo(this.stepsType).numTracks);
+        NoteDataUtil.loadFromSmNoteDataString(this.noteData, this.noteDataCompressed);
+        debugger;
     }
 
     public tidyUpData(): void {
@@ -72,7 +95,6 @@ export class Steps {
         // delete them. -Kyz
         if (this.stepsType === StepsType.Invalid) {
             const stepsTypeString = this.stepsTypeName;
-// tslint:disable-next-line: no-console
             console.warn(`Detected steps with unknown style '${stepsTypeString}' in sm data`);
         } else if (this.stepsTypeName === '') {
             // TODO: lookup the StepsTypeInfo for the stepsType and set the typeName using it
@@ -96,7 +118,7 @@ export class Steps {
 
         if (this.meter < 1) {
             // meter is invalid!
-            // TODO: translate prediction function, if it ever seems useful
+            // TODO: translate prediction function, if it ever seems useful - Struz
             // this.meter = this.predictMeter()
         }
     }

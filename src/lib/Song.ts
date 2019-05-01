@@ -55,7 +55,7 @@ export class Song {
 
     constructor() {
         this.stepsByType = [];
-        for (let i = 0; i < StepsType.NUM_StepsType; i++) {
+        for (let i = 0; i < StepsType.NUM; i++) {
             this.stepsByType[i] = [];
         }
         this.steps = [];

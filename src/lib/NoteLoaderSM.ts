@@ -1,12 +1,11 @@
-// tslint:disable: no-console
-
 import MsdFile from './MsdFile';
 import Steps, { DisplayBPM } from './Steps';
 import Song from './Song';
-import { Helpers, Difficulty, StepsTypeInfos } from './GameConstantsAndTypes';
+import { Helpers, Difficulty } from './GameConstantsAndTypes';
 import TimingData from './TimingData';
 import { ROWS_PER_BEAT, NoteHelpers } from './NoteTypes';
-import { TimeSignatureSegment, DelaySegment, BPMSegment, WarpSegment, StopSegment, TickcountSegment } from './TimingSegments';
+import { TimeSignatureSegment, DelaySegment, BPMSegment,
+     WarpSegment, StopSegment, TickcountSegment } from './TimingSegments';
 
 /**
  * The highest allowable speed before Warps come in.
@@ -240,7 +239,8 @@ export class NoteLoaderSM {
         }
 
         // TODO: string to steps type
-        steps.stepsType = Helpers.StringToStepsType(stepsType);
+        debugger;
+        steps.stepsType = Helpers.stringToStepsType(stepsType);
         steps.stepsTypeName = stepsType;
         steps.description = description;
         steps.credit = description; // This is often used for both
@@ -274,7 +274,7 @@ export class NoteLoaderSM {
      * @returns a SongTimingInfo containing the data.
      */
     public static parseBpms(line: string, rowsPerBeat: number = -1): SongTimingInfo {
-        const songBpmInfo = [];
+        const songBpmInfo: SongTimingInfo = [];
 
         const bpmChangeExpressions = line.split(',');
         for (const expression of bpmChangeExpressions) {
@@ -469,7 +469,7 @@ export class NoteLoaderSM {
         // BPMs cause unpredictable behavior, so ignore them as well and issue a
         // warning.
         let bpmIndex = 0;
-        const bpmMax = bpms.length - 1;
+        const bpmMax = bpms.length;
         for (const bpmPair of bpms) {
             if (bpmPair[0] >= 0) {
                 break;
@@ -490,10 +490,8 @@ export class NoteLoaderSM {
                 console.debug('.sm data has no valid BPMs. Defaulting to 60.');
             } else {
                 // Yep. Get the next BPM.
-                bpmIndex++;
-                // IMPORTANT: bug here such that the bpm doesn't have a second value
-                debugger;
                 bpm = bpms[bpmIndex][1];
+                bpmIndex++;
                 console.debug('.sm data does not establish a BPM before beat 0. ' +
                               'Using the value from the next BPM change');
             }
@@ -509,7 +507,7 @@ export class NoteLoaderSM {
             // Get the next change in order, with BPMs taking precedence
             // when they fall on the same beat.
             const changeIsBpm = (stopIndex === stopMax) ||
-                (bpmIndex !== bpmMax && bpms[bpmIndex][0] <= stops[stopIndex][0]);
+                (bpmIndex < bpmMax && bpms[bpmIndex][0] <= stops[stopIndex][0]);
             const change = changeIsBpm ? bpms[bpmIndex] : stops[stopIndex];
 
             // Calculate the effects of time at the current BPM.  "Infinite"
@@ -665,6 +663,7 @@ export class NoteLoaderSM {
                     params[4],
                     params[6],
                 );
+                steps.decompress();
                 song.addSteps(steps);
             }
         }
@@ -728,8 +727,7 @@ export class NoteLoaderSM {
 
                 const noteData: string = params[6].trim();
                 const steps = new Steps(noteData);
-
-                // this.steps.SetSMNoteData(noteData) // Handles compressed data initialisation - note data is lazily loaded from this
+                steps.decompress();
                 steps.tidyUpData();
                 return steps;
             }
