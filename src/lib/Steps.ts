@@ -34,8 +34,6 @@ export class Steps {
     public stepsType: StepsType = StepsType.Invalid;
     /** The string form of the StepsType, for dealing with unrecognized styles. */
     public stepsTypeName: string = '';
-    /** The Song these Steps are associated with */
-    public song: Song = new Song();
 
     // The name of the edit, or some other useful description.
     // This used to also contain the step author's name.
@@ -52,12 +50,12 @@ export class Steps {
     // The name of the chart
     public chartName: string = '';
     // How is the BPM displayed for the chart?
-    public displayBPMType: number = -1;
+    public displayBPMType: number = DisplayBPM.ACTUAL;
     // What is the minimum specified BPM?
-    public specifiedBpmMin: number = -1;
+    public specifiedBpmMin: number = 0;
     // What is the maximum specified BPM?
     // If this is a range then min should not be equal to max
-    public specifiedBpmMax: number = -1;
+    public specifiedBpmMax: number = 0;
 
     // Note data for the song
     private noteData: NoteData = new NoteData();
@@ -83,7 +81,6 @@ export class Steps {
         this.noteDataIsFilled = true;
         this.noteData.setNumTracks(Helpers.getStepsTypeInfo(this.stepsType).numTracks);
         NoteDataUtil.loadFromSmNoteDataString(this.noteData, this.noteDataCompressed);
-        debugger;
     }
 
     public tidyUpData(): void {

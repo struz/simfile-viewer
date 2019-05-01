@@ -27,7 +27,7 @@ export class Song {
     public musicLengthSec = 0;
     public musicSampleStartSec = 0;
     public musicSampleLengthSec = 0;
-    public displayBpmType = 0;  // An enum, not sure how I'll handle this yet
+    public displayBpmType = 0;
     public specifiedBpmMin = 0;
     public specifiedBpmMax = 0;
 

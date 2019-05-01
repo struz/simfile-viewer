@@ -239,7 +239,6 @@ export class NoteLoaderSM {
         }
 
         // TODO: string to steps type
-        debugger;
         steps.stepsType = Helpers.stringToStepsType(stepsType);
         steps.stepsTypeName = stepsType;
         steps.description = description;

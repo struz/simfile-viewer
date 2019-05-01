@@ -16,7 +16,7 @@ export const ROWS_PER_MEASURE = ROWS_PER_BEAT * BEATS_PER_MEASURE;
  */
 export class NoteDataUtil {
 // tslint:disable-next-line: variable-name
-    public static loadFromSmNoteDataString(out: NoteData, smNoteData_: string) {
+    public static loadFromSmNoteDataString(out: NoteData, smNoteData_: string): void {
         // Load note data
         let smNoteData: string = '';
         let indexCommentStart = 0;
@@ -27,14 +27,14 @@ export class NoteDataUtil {
 // tslint:disable-next-line: no-conditional-assignment
         while ( (indexCommentStart = smNoteData_.indexOf('//', indexCommentEnd)) !== -1 ) {
             // Append the data in between the last comment and this comment
-            smNoteData += smNoteData_.slice(index, indexCommentStart - indexCommentEnd);
+            smNoteData += smNoteData_.substr(index, indexCommentStart - indexCommentEnd);
             index += indexCommentStart - indexCommentEnd;
             // Move forward to the end of the comment
             indexCommentEnd = smNoteData_.indexOf('\n', indexCommentStart);
-            indexCommentEnd = (indexCommentEnd !== -1 ? smNoteData_.length : indexCommentEnd + 1);
+            indexCommentEnd = (indexCommentEnd === -1 ? smNoteData_.length : indexCommentEnd + 1);
             index += indexCommentEnd - indexCommentStart;
         }
-        smNoteData += smNoteData_.slice(index, smNoteData_.length - indexCommentEnd);
+        smNoteData += smNoteData_.substr(index, smNoteData_.length - indexCommentEnd);
 
         // Clear notes, but keep the same number of tracks.
         const numTracks = out.getNumTracks();
@@ -42,12 +42,11 @@ export class NoteDataUtil {
         out.setNumTracks(numTracks);
 
         // We don't support composite yet so ignore composite logic - Struz
-
         this.loadFromSmNoteDataStringWithPlayer(out, smNoteData, PLAYER_INVALID, numTracks);
     }
 
     public static loadFromSmNoteDataStringWithPlayer(
-        out: NoteData, smNoteData: string, pn: PlayerNumber, numTracks: number) {
+        out: NoteData, smNoteData: string, pn: PlayerNumber, numTracks: number): void {
         // The code in StepMania is very careful about allocations when doing this,
         // probably because they're dealing with entire full libraries of charts.
         // We do one at a time, we don't care. - Struz
@@ -78,7 +77,7 @@ export class NoteDataUtil {
                 // Do the same thing as the stepmania code with empty characters
                 // I'm not sure if it's necessary. If not rip this out later. - Struz
                 const match = line.search(/[\t\n\r ]/);
-                if (match) {
+                if (match !== -1) {
                     line = line.substring(0, match);
                     if (line.length === 0) {
                         continue;
@@ -102,7 +101,6 @@ export class NoteDataUtil {
                         tn.pn = pn;
                         out.setTapNote(trackIndex, noteRow, tn);
                     }
-                    return tn;
                 }
             }
         }
