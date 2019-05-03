@@ -1,4 +1,6 @@
 import { TimingSegment, TimingSegmentType, SegmentEffectType } from './TimingSegments';
+import { DetailedTimeInfo } from './SongPosition';
+import { NotImplementedError } from './Error';
 
 const INVALID_INDEX: number = -1;
 
@@ -184,6 +186,18 @@ export class TimingData {
         }
         // row is before first segment of type tst
         return INVALID_INDEX;
+    }
+
+    public getDetailedInfoForSecond(args: DetailedTimeInfo): void {
+        throw new NotImplementedError();
+    }
+
+    public getBeatFromElapsedTimeNoOffset(second: number): number {
+        throw new NotImplementedError();
+    }
+
+    public getBeatFromElapsedTime(second: number): number {
+        throw new NotImplementedError();
     }
 }
 export default TimingData;

@@ -51,6 +51,7 @@ describe('NoteLoaderSM', () => {
         // We don't parse #KEYSOUNDS
 
         // TODO: check notes properly
+        expect(song.getSteps(0).getNoteData().tapNotes[3].get(816)).to.not.equal(undefined);
     });
 
     // TODO: craft a special simfile that has all the kinds of fields, including stops and BPM changes

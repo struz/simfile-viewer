@@ -70,5 +70,9 @@ export class Song {
     public hasSteps(): boolean {
         return this.steps.length > 0;
     }
+
+    public getSteps(index: number) {
+        return this.steps[index];
+    }
 }
 export default Song;
