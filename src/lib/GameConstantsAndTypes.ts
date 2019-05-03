@@ -1,5 +1,9 @@
 // tslint:disable: max-line-length
 
+interface GameEnum {
+    NUM: number;
+}
+
 // The different game categories available to play.
 // Taken from commit b95e49216eb2974b8e0f69b6603595df1c698ccd
 export enum StepsTypeCategory {
@@ -212,6 +216,25 @@ export class Helpers {
         seconds += this.stringToInt(arrayBits[1]) * 60;
         seconds += this.stringToFloat(arrayBits[2]);
         return seconds;
+    }
+
+    /**
+     * Return a list of values for the enum, not including Invalid.
+     * Enum must have a .NUM element for this to work.
+     *
+     * Uses some any magic, but we expect to only return numbers.
+     */
+    public static forEachEnum(gameEnum: { NUM: number }): number[] {
+        const iterator: number[] = [];
+        const keys = Object.keys(gameEnum);
+        const values = keys.map((k) => {
+            if (k === 'NUM') { return; }
+            const value = (gameEnum as any)[k as any];
+            if (value < gameEnum.NUM) {
+                iterator.push(value);
+            }
+        });
+        return iterator;
     }
 
     /** Clamp a number to be between min and max. */

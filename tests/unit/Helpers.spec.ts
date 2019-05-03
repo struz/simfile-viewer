@@ -35,3 +35,23 @@ describe('Helpers.HHMMSSToSeconds', () => {
         expect(Helpers.HHMMSSToSeconds('59')).to.equal(59);
     });
 });
+
+describe('Helpers.forEachEnum', () => {
+    enum TestEnum {
+        zero,
+        one,
+        two,
+        NUM,
+        unlooped,
+        unlooped2,
+    }
+
+    it('loops over a correctly defined enum', () => {
+        const expected = [0, 1, 2];
+        let i = 0;
+        for (const value of Helpers.forEachEnum(TestEnum)) {
+            expect(value).to.equal(expected[i]);
+            i++;
+        }
+    });
+});

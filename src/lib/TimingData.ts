@@ -1,10 +1,21 @@
+// tslint:disable: max-classes-per-file
 import { TimingSegment, TimingSegmentType, SegmentEffectType } from './TimingSegments';
-import { DetailedTimeInfo } from './SongPosition';
 import { NotImplementedError } from './Error';
 
 const INVALID_INDEX: number = -1;
 
-// Holds data for translating beats<->seconds.
+/** Struct for passing around timing info. */
+export class DetailedTimeInfo {
+    public second = 0;
+    public beat = 0;
+    public bpsOut = 0;
+    public warpDestOut = 0;
+    public warpBeginOut = -1; // int
+    public freezeOut = false;
+    public delayOut = false;
+}
+
+/** Holds data for translating beats<->seconds. */
 export class TimingData {
     /** The initial offset of a song. */
     private beat0OffsetInSecs: number = 0;

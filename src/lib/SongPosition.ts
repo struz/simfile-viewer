@@ -1,20 +1,5 @@
-import TimingData from './TimingData';
-
-export interface GameTimer {
-    // TODO: move me to another file, make me a class, and fill me out
-    // TODO: will track deltas of timing
-    isZero(): boolean;
-    touch(): void;
-    getDetailedInfoForSecond(args: DetailedTimeInfo): void;
-}
-
-export interface DetailedTimeInfo {
-    second: number;
-    beat: number;
-    bpsOut: number;
-    freezeOut: boolean;
-    delayOut: boolean;
-}
+import TimingData, { DetailedTimeInfo } from './TimingData';
+import { GameTimer } from './GameTimer';
 
 // TODO: support delays and offsets?
 const gVisualDelaySeconds = 0;
@@ -55,7 +40,7 @@ export class SongPosition {
             this.lastBeatUpdate.touch();
         }
 
-        const beatInfo: DetailedTimeInfo = {}; // make it a proper fake?
+        const beatInfo: DetailedTimeInfo = new DetailedTimeInfo();
         beatInfo.second = positionSeconds;
         timing.getDetailedInfoForSecond(beatInfo);
         this.songBeat = beatInfo.beat;
