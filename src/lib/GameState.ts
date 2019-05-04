@@ -4,6 +4,7 @@ import SongPosition from './SongPosition';
 import { PlayerState } from './PlayerState';
 import Helpers from './GameConstantsAndTypes';
 import { GameTimer } from './GameTimer';
+import { Steps } from './Steps';
 
 /** Holds all the state about the game. A singleton. */
 export class GameState {
@@ -25,11 +26,12 @@ export class GameState {
         if (!GameState.instance) {
             GameState.instance = new GameState();
         }
+        return GameState.instance;
     }
     private static instance: GameState;
 
     // Stuff used in gameplay
-    // public curSteps: steps[]; // A broadcast on change pointer in C++
+    public curSteps: Steps[]; // One inde per player; A broadcast on change pointer in C++
     public position: SongPosition = new SongPosition();
 
     public hasteRate: number;
@@ -55,6 +57,8 @@ export class GameState {
     private paused = false;
 
     private constructor() {
+        this.curSteps = [];
+
         this.playerState = [];
         for (const pn of Helpers.forEachEnum(PlayerNumber)) {
             this.playerState[pn] = new PlayerState();
@@ -87,7 +91,32 @@ export class GameState {
     }
 
     public updateSongPosition(positionSeconds: number, timing: TimingData, timestamp: GameTimer) {
-        //
+        /* It's not uncommon to get a lot of duplicated positions from the sound
+         * driver, like so: 13.120953,13.130975,13.130975,13.130975,13.140998,...
+         * This causes visual stuttering of the arrows. To compensate, keep a
+         * RageTimer since the last change. */
+        if (positionSeconds === this.lastPositionSeconds && !this.paused) {
+            positionSeconds += this.lastPositionTimer.ago();
+        } else {
+            this.lastPositionTimer.touch();
+            this.lastPositionSeconds = positionSeconds;
+        }
+
+        this.position.updateSongPosition(positionSeconds, timing, timestamp);
+
+        // TODO: fixme to be a FOREACH_EnabledPlayer
+        // Just do p1 for now
+        const pn = 0;
+        if (this.curSteps.length) {
+            this.playerState[pn].position.updateSongPosition(positionSeconds,
+                this.curSteps[pn].timingData, timestamp);
+            this.setPlayerBgmBeat(pn, this.playerState[pn].position.songBeatVisible,
+                this.playerState[pn].position.songBeatNoteOffset);
+        }
+        this.setBgmTime(GameState.getInstance().position.musicSecondsVisible,
+            GameState.getInstance().position.songBeatVisible,
+            positionSeconds,
+            GameState.getInstance().position.songBeatNoteOffset);
     }
 }
 export default GameState;
