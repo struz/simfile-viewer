@@ -85,6 +85,25 @@ describe('TrackMap', () => {
             i++;
         }
     });
+    // it('supports peeking', () => {
+    //     const tm = new TrackMap();
+    //     const tn1 = new TapNote();
+    //     const tn2 = new TapNote();
+    //     const tn3 = new TapNote();
+    //     tm.set(1, tn1);
+    //     tm.set(3, tn3);
+    //     tm.set(2, tn2);
+
+    //     let expected = [[1, tn1], [2, tn2], [3, tn3]];
+    //     const it = tm.entries();
+    //     let entry = it.peek();
+    //     expect(entry.value[0]).to.equal(expected[0][0]);
+    //     expect(entry.value[1]).to.equal(expected[0][1]);
+
+    //     entry = it.next();
+    //     expect(entry.value[0]).to.equal(expected[0][0]);
+    //     expect(entry.value[1]).to.equal(expected[0][1]);
+    // });
     it('can skip to particular value before iterating', () => {
         const tm = new TrackMap();
         const tn1 = new TapNote();

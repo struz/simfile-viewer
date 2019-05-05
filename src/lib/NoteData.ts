@@ -1,10 +1,11 @@
 // tslint:disable: max-classes-per-file
 
-import { TapNote, TapNoteSubType, TapNotes } from './NoteTypes';
+import { TapNote, TapNoteSubType, TapNotes, MAX_NOTE_ROW } from './NoteTypes';
 import TimingData from './TimingData';
 import { TapNoteType } from './NoteTypes';
 import { NotImplementedError } from './Error';
 import { DEBUG_ASSERT } from './Debug';
+import { PassByRef } from './GameConstantsAndTypes';
 
 // NoteData is organized by:
 //   track - corresponds to different columns of notes on the screen
@@ -205,6 +206,16 @@ class TrackMapIterator implements IterableIterator<[number, TapNote]> {
         return this;
     }
 
+    // /** Peek the iterator without going anywhere.
+    //  * Useful for assessing whether we start at the end of a range already.
+    //  */
+    // public peek(): IteratorResult<[number, TapNote]> {
+    //     if (this.lastNextResult === undefined) {
+    //         this.lastNextResult = this.it.next();
+    //     }
+    //     return this.lastNextResult;
+    // }
+
     public track(): number {
         throw new NotImplementedError();
     }
@@ -213,9 +224,10 @@ class TrackMapIterator implements IterableIterator<[number, TapNote]> {
         throw new NotImplementedError();
     }
 
-    public isAtEnd(): boolean {
+    public finished(): boolean {
+        // We can't know if we're finished if we haven't gone anywhere
         if (this.lastNextResult === undefined) {
-            this.lastNextResult = this.it.next();
+            return false;
         }
         return this.lastNextResult.done;
     }
@@ -238,6 +250,11 @@ export function FOREACH_NONEMPTY_ROW_IN_TRACK(
 
 /** Act on each non empty row in the specified track within the specified range, going in reverse order. */
 /** Act on each non empty row for all of the tracks. */
+export function FOREACH_NONEMPTY_ROW_ALL_TRACKS(
+    nd: NoteData, row: number, fn: (nd: NoteData, row: number) => void) {
+        const rowPbr = {value: row};
+        const it = nd.getNextTapNoteRowForAllTracks(rowPbr);
+}
 /** Act on each non empty row for all of the tracks within the specified range. */
 
 /** Holds data about the notes that the player is supposed to hit. */
@@ -268,9 +285,13 @@ export class NoteData {
     public equals(other: NoteData) { return this.tapNotes === other.tapNotes; }
 
     public getTapNote(track: number, row: number): TapNote {
+        // TODO: I think I can improve the original application's performance by not
+        // doing ANOTHER .get() here, but instead just returning the TapNote()
+        // out of the function. Or keeping a constant iterator which can straight return the value.
+        // IMPORTANT: optimise later, only if performance sucks
         const trackMap = this.tapNotes[track];
         const noteRow = trackMap.get(row);
-        return (noteRow === undefined) ? TapNotes.EMPTY : noteRow;
+        return (noteRow === undefined) ? TapNotes.newEmpty() : noteRow;
     }
 
     public findTapNote(track: number, row: number) { throw new NotImplementedError(); }
@@ -304,10 +325,77 @@ export class NoteData {
     // Omitted overloaded getTapNoteRangeExclusive()
 
     /* Returns the row of the first TapNote on the track that has a row greater than rowInOut. */
-    public getNextTapNoteRowForTrack(track: number) { throw new NotImplementedError(); }
-    public getNextTapNoteRowForAllTracks() { throw new NotImplementedError(); }
-    public getPrevTapNoteRowForTrack(track: number) { throw new NotImplementedError(); }
-    public getPrevTapNoteRowForAllTracks() { throw new NotImplementedError(); }
+    public getNextTapNoteRowForTrack(track: number, rowInAndOut: PassByRef<number>, ignoreAutoKeysounds = false) {
+        const mapTrack = this.tapNotes[track];
+        const iter = mapTrack.entries(rowInAndOut.value + 1); // "find the first note for which row+1 < key == false"
+        let entry = iter.next();
+        if (entry.done) { return false; }
+
+        DEBUG_ASSERT(entry.value[0] > rowInAndOut.value);
+
+        if (ignoreAutoKeysounds) {
+            while (entry.value[1].type === TapNoteType.AutoKeysound) {
+                entry = iter.next();
+                if (entry.done) { return false; }
+            }
+        }
+        rowInAndOut.value = entry.value[0];
+        return true;
+    }
+
+    public getNextTapNoteRowForAllTracks(rowInAndOut: PassByRef<number>) {
+        let closestNextRow = MAX_NOTE_ROW;
+        let anyHaveNextNote = false;
+        for (let t = 0; t < this.getNumTracks(); t++) {
+            const newRowThisTrack = {value: rowInAndOut.value};
+            if (this.getNextTapNoteRowForTrack(t, newRowThisTrack)) {
+                anyHaveNextNote = true;
+                DEBUG_ASSERT(newRowThisTrack.value < MAX_NOTE_ROW);
+                closestNextRow = Math.min(closestNextRow, newRowThisTrack.value);
+            }
+        }
+
+        if (anyHaveNextNote) {
+            rowInAndOut.value = closestNextRow;
+            return true;
+        }
+        return false;
+    }
+
+    public getPrevTapNoteRowForTrack(track: number, rowInAndOut: PassByRef<number>) {
+        const mapTrack = this.tapNotes[track];
+
+        // Find the first note >= rowInOut.
+        const iter = mapTrack.reverseEntries(rowInAndOut.value);
+
+        // If we're at the beginning, we can't move back any more.
+        const entry = iter.next();
+        if (entry.done) { return false; }
+
+        // Move back by one
+        DEBUG_ASSERT(entry.value[0] < rowInAndOut.value);
+        rowInAndOut.value = entry.value[0];
+        return true;
+    }
+
+    public getPrevTapNoteRowForAllTracks(rowInAndOut: PassByRef<number>) {
+        let closestPrevRow = 0;
+        let anyHavePrevNote = false;
+        for (let t = 0; t < this.getNumTracks(); t++) {
+            const newRowThisTrack = {value: rowInAndOut.value};
+            if (this.getPrevTapNoteRowForTrack(t, newRowThisTrack)) {
+                anyHavePrevNote = true;
+                DEBUG_ASSERT(newRowThisTrack.value < MAX_NOTE_ROW);
+                closestPrevRow = Math.max(closestPrevRow, newRowThisTrack.value);
+            }
+        }
+
+        if (anyHavePrevNote) {
+            rowInAndOut.value = closestPrevRow;
+            return true;
+        }
+        return false;
+    }
 
     public moveTapNoteTrack(dest: number, src: number) { throw new NotImplementedError(); }
     public setTapNote(track: number, row: number, tn: TapNote) {
@@ -320,7 +408,7 @@ export class NoteData {
         // Any blank space in the map is defined to be empty.
         // If we're trying to insert an empty at a spot where another note
         // already exists, then we're really deleting from the map.
-        if (tn === TapNotes.EMPTY) {
+        if (tn.equals(TapNotes.EMPTY)) {
             const trackMap = this.tapNotes[track];
             // remove the element at this position (if any).
             // This will return either true or false.

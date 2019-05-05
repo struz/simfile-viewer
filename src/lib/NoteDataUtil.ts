@@ -128,7 +128,7 @@ export class NoteDataUtil {
      * @returns A new TapNote.
      */
     public static parseTapNoteData(noteChar: string, pn: PlayerNumber, nd: NoteData): TapNote {
-        let tn: TapNote = TapNotes.EMPTY;
+        let tn: TapNote = TapNotes.newEmpty();
 
         switch (noteChar) {
             case '0': tn = TapNotes.newEmpty(); break;

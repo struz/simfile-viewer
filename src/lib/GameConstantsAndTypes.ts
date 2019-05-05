@@ -179,6 +179,11 @@ const OldStyleStringToDifficultyMap: Map<string, Difficulty> = new Map([
 const MIN_METER = 1;
 const MAX_METER = 35;
 
+/** Hacky way to pass things by reference without too much overhead. */
+export interface PassByRef<T> {
+    value: T;
+}
+
 // Disabled so we can group collective things up in this file
 // tslint:disable-next-line: max-classes-per-file
 export class Helpers {

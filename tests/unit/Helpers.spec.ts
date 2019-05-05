@@ -1,7 +1,7 @@
 // tslint:disable: max-line-length
 
 import { expect } from 'chai';
-import { Helpers } from '@/lib/GameConstantsAndTypes';
+import { Helpers, PassByRef } from '@/lib/GameConstantsAndTypes';
 
 describe('Helpers.clamp', () => {
     it('clamps numbers properly', () => {
@@ -53,5 +53,16 @@ describe('Helpers.forEachEnum', () => {
             expect(value).to.equal(expected[i]);
             i++;
         }
+    });
+});
+
+describe('PassByRef', () => {
+    it('allows passing a number by reference', () => {
+        const transform = (numToChange: PassByRef<number>) => {
+            numToChange.value = 20;
+        };
+        const num = {value: 5};
+        transform(num);
+        expect(num.value).to.equal(20);
     });
 });
