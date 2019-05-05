@@ -3,7 +3,7 @@ import { start } from 'repl';
 import { PLAYER_INVALID, PlayerNumber } from './PlayerNumber';
 import NoteHelpers, { TapNote, TapNotes, MAX_NOTE_ROW, TapNoteType, ROWS_PER_BEAT } from './NoteTypes';
 
-// TODO: Remove these constants that aren't time signature-aware
+// STEPMANIA-TODO: Remove these constants that aren't time signature-aware
 export const BEATS_PER_MEASURE = 4;
 export const ROWS_PER_MEASURE = ROWS_PER_BEAT * BEATS_PER_MEASURE;
 
@@ -92,7 +92,7 @@ export class NoteDataUtil {
                 // Now for the fun stuff
                 for (let trackIndex = 0; trackIndex < numTracks; trackIndex++) {
                     const noteChar = line.charAt(trackIndex);
-                    const tn = this.parseTapNoteData(noteChar, pn);
+                    const tn = this.parseTapNoteData(noteChar, pn, out);
 
                     // Optimization: if we pass TAP_EMPTY, NoteData will do a search
                     // to remove anything in this position.  We know that there's nothing
@@ -107,7 +107,8 @@ export class NoteDataUtil {
 
         // Make sure we don't have any hold notes that didn't find a tail.
         for (let t = 0; t < out.getNumTracks(); t++) {
-            // TODO: standard way of iterating through tracks
+            // TODO: create a class-standard way of iterating through tracks
+            // preferably keeping the track variable private.
             const track = out.tapNotes[t];
             for (const [row, tn] of track) {
                 if (tn.type === TapNoteType.HoldHead && tn.duration === MAX_NOTE_ROW) {
@@ -120,7 +121,13 @@ export class NoteDataUtil {
         // We don't use Advanced Type Iterators so we don't need to revalidate ATIs
     }
 
-    public static parseTapNoteData(noteChar: string, pn: PlayerNumber): TapNote {
+    /** Parse a single character into a TapNote.
+     * @param noteChar the text character defining the qualities of the note.
+     * @param pn the player number we are parsing for.
+     * @param nd the NoteData to parse the note into. This is required for finding hold starts.
+     * @returns A new TapNote.
+     */
+    public static parseTapNoteData(noteChar: string, pn: PlayerNumber, nd: NoteData): TapNote {
         let tn: TapNote = TapNotes.EMPTY;
 
         switch (noteChar) {
@@ -135,8 +142,13 @@ export class NoteDataUtil {
                 break;
             case '3':
                 // This is the end of a hold, search for the beginning
+                // TODO pass by ref
                 const headRow = 0;
+                // if (!nd.isHoldNoteAtRow(track, index, headRow)) {
+
+                // }
                 // IMPORTANT: handle this search
+
                 break;
             case 'M': tn = TapNotes.newOriginalMine(); break;
             case 'K': tn = TapNotes.newOriginalAutoKeysound(); break;

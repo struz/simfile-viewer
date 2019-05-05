@@ -1,3 +1,5 @@
+// tslint:disable: max-classes-per-file
+
 import { TapNote, TapNoteSubType, TapNotes } from './NoteTypes';
 import TimingData from './TimingData';
 import { TapNoteType } from './NoteTypes';
@@ -8,8 +10,214 @@ import { DEBUG_ASSERT } from './Debug';
 //   track - corresponds to different columns of notes on the screen
 //   row/index - corresponds to subdivisions of beats
 
-// I'm not sure why tey use a map instead of an array here - Struz
-type TrackMap = Map<number, TapNote>;
+// C++ code used this type, we need a better type since in C++ maps are sorted.
+// Without sorting, iteration over tracks becomes a problem. - Struz
+// type TrackMap = Map<number, TapNote>;
+
+export class TrackMap {
+    // Shut tslint up about functions that may not exist until .proxy() runs
+    [x: string]: any;
+
+    private static skipOverride = ['set', 'entries', 'values', 'keys', 'constructor'];
+    private static sortNumbersAsc(a: [number, TapNote], b: [number, TapNote]) {
+        return a[0] - b[0];
+    }
+    // TODO: write tests for me to ensure I stay ordered
+    // TODO: iterators - forward and backwards, and specific ranges
+
+    public size: number;
+    private map: Map<number, TapNote>;        /** The map object backing this. */
+    private mapReverse: Map<number, TapNote>; /** Required for backwards iteration. */
+    private isSorted: boolean;
+
+
+    constructor() {
+        this.map = new Map();
+        this.mapReverse = new Map();
+        this.size = 0;
+        this.isSorted = true;
+        this.autoSort = true;
+        this.proxy();
+    }
+
+    // Iterator wrappers
+    /** Wrapper for map.entries() that ensures that entries are looped in ascending order. */
+    public entries() {
+        this.sort();
+        return new TrackMapIterator(this.map, IteratorDirection.Forwards);
+    }
+    public keys() {
+        this.sort();
+        return this.map.keys();
+    }
+    public values() {
+        this.sort();
+        return this.map.values();
+    }
+    public [Symbol.iterator](): IterableIterator<[number, TapNote]> {
+        this.sort();
+        return this.map[Symbol.iterator]();
+    }
+    // Reverse iterators. The reason behind using a reversed map to do reverse
+    // iteration is that ES6 maps use hashing and internal [[MapData]] slots.
+    // If we were to implement the reverse iteration using arrays we would lose
+    // some efficiency, so we take the hit in terms of memory to store a
+    // second copy of the map.
+    public reverseEntries() {
+        this.sort();
+        return new TrackMapIterator(this.reverseMap, IteratorDirection.Backwards);
+    }
+    public reverseKeys() {
+        this.sort();
+        return this.mapReverse.keys();
+    }
+    public reverseValues() {
+        this.sort();
+        return this.mapReverse.values();
+    }
+
+    /** Wrapper for map.set() that sets some extra state. */
+    public set(key: number, value: TapNote) {
+        this.map.set(key, value);
+        this.isSorted = false;
+        this.size = this.map.size;
+        return this;
+    }
+
+    /**
+     * Sort the map - relatively expensive operation as it must create a new map.
+     * Ideally we won't be using this much as we shouldn't be inserting mid-gameplay.
+     */
+    private sort() {
+        if (this.isSorted) { return; }
+
+        const sortedEntriesAsc = [...this.map.entries()].sort(TrackMap.sortNumbersAsc);
+        // shallow copy with .slice() then reverse it. Possibly not necessary.
+        const sortedEntriesDesc = sortedEntriesAsc.slice().reverse();
+
+        this.map = new Map(sortedEntriesAsc);
+        this.reverseMap = new Map(sortedEntriesDesc);
+        this.isSorted = true;
+        this.proxy();
+        // TODO: make sure that .proxy() is also adding things to the reversed array
+    }
+
+    /**
+     * Proxy the inner map's functions to the outside of this class.
+     * This is so we can use all the map's features with very little work.
+     * Each time we change the inner map we need to re-proxy.
+     */
+    private proxy() {
+        const mapProps = Object.getOwnPropertyNames(Object.getPrototypeOf(this.map));
+        // For each property of map that's a function and that we don't
+        // want to override ourselves, proxy that function directly via a bound function.
+        mapProps.forEach((prop) => {
+            if (TrackMap.skipOverride.indexOf(prop) !== -1 ||
+                typeof (this.map as any)[prop] !== 'function') {
+                return;
+            }
+            const mapFunc = (this.map as any)[prop].bind(this.map);
+            const reverseMapFunc = (this.mapReverse as any)[prop].bind(this.mapReverse);
+            // We have to wrap the func rather than assign it directly to
+            // ensure our .size method works.
+            const wrapFunc = (...args: any) => {
+                const retVal = mapFunc(...args);
+                reverseMapFunc(...args);
+                this.size = this.map.size;  // stay in sync
+                // We're primarily concerned with the ascending map, so we return that
+                return retVal;
+            };
+            this[prop] = wrapFunc;
+        });
+    }
+}
+
+enum IteratorDirection {
+    Forwards,
+    Backwards,
+}
+
+/**
+ * Iterator over a TrackMap that keeps state about where in the track it is.
+ */
+class TrackMapIterator implements IterableIterator<[number, TapNote]> {
+    /* Depending on the direction we need different comparisons for using
+     * startAt and endAt. */
+    private static compare(value1: number, value2: number, direction: IteratorDirection) {
+        if (direction === IteratorDirection.Forwards) {
+            return value1 >= value2;
+        }
+        return value1 <= value2;
+    }
+
+    private it: Iterator<[number, TapNote]>;
+    // We need to store the last next() result as we internally need next() to
+    // set up the iterator.
+    private lastNextResult: IteratorResult<[number, TapNote]> | undefined;
+    private direction: IteratorDirection;
+    private start: number | undefined;
+    private end: number | undefined;
+
+    // TODO: make the startAt version of this as performant as the possible implementations
+    // at https://en.cppreference.com/w/cpp/algorithm/lower_bound
+    constructor(map: Map<number, TapNote>, direction: IteratorDirection,
+                startAt?: number, endAt?: number) {
+        this.it = map.entries();
+        this.direction = direction;
+        this.start = startAt;
+        this.end = endAt;
+        if (this.start === undefined) { return; }
+
+        // Set the iterator to start at the given index
+        let result = this.next();
+        while (!result.done) {
+            if (TrackMapIterator.compare(result.value[0], this.start, this.direction)) {
+                return;
+            }
+            result = this.next();
+        }
+    }
+
+    public next(): IteratorResult<[number, TapNote]> {
+        if (this.lastNextResult === undefined) {
+            this.lastNextResult = this.it.next();
+        }
+        const ret = this.lastNextResult;
+        this.lastNextResult = this.it.next();
+        return ret;
+    }
+
+    public [Symbol.iterator](): IterableIterator<[number, TapNote]> {
+        return this;
+    }
+
+    public track(): number {
+        throw new NotImplementedError();
+    }
+
+    public row(): number {
+        throw new NotImplementedError();
+    }
+
+    public isAtEnd(): boolean {
+        if (this.lastNextResult === undefined) {
+            this.lastNextResult = this.it.next();
+        }
+        return this.lastNextResult.done;
+    }
+
+    // TODO: fill this out when I understand more about the use cases
+}
+
+/** Act on each non empty row in the specific track. */
+export function FOREACH_NONEMPTY_ROW_IN_TRACK(
+    nd: NoteData, track: number, row: number, fn: () => void) {
+    const it = nd.tapNotes[track].entries();
+    let result = it.next();
+    while (!result.done) {
+        fn();
+    }
+}
 
 /** Holds data about the notes that the player is supposed to hit. */
 export class NoteData {
@@ -32,7 +240,7 @@ export class NoteData {
         this.tapNotes.length = newNumTracks;
         for (let i = 0; i < newNumTracks; i++) {
             // If we extended it then make sure we create the new maps)
-            this.tapNotes[i] = (this.tapNotes[i] === undefined ? new Map<number, TapNote>() : this.tapNotes[i]);
+            this.tapNotes[i] = (this.tapNotes[i] === undefined ? new TrackMap() : this.tapNotes[i]);
         }
     }
     public isComposite() { throw new NotImplementedError(); }
@@ -123,6 +331,17 @@ export class NoteData {
     public copyAll() { return new NotImplementedError(); }
 
     public isRowEmpty(row: number) { return new NotImplementedError(); }
+    /* Determine if a hold note lies on the given spot. Return true if so.  If
+     * pHeadRow is non-nullptr, return the row of the head. (Note that this returns
+     * false if a hold head lies on iRow itself.) */
+    public isHoldNoteAtRow(track: number, row: number, headRow: number[]) {
+        // headRow is really a pass-by-ref single number
+
+        /* Starting at iRow, search upwards. If we find a TapNoteType_HoldHead, we're within
+         * a hold. If we find a tap, mine or attack, we're not--those never lie
+         * within hold notes. Ignore autoKeysound. */
+        // IMPORTANT: need to solve the iteration problem RIGHT NOW
+    }
     // TODO: finish me off sometime from NoteData.h
 }
 export default NoteData;
