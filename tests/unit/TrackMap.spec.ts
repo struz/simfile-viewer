@@ -1,7 +1,7 @@
 // tslint:disable: max-line-length
 
 import { expect } from 'chai';
-import { TrackMap } from '@/lib/NoteData';
+import NoteData, { TrackMap, FOREACH_NONEMPTY_ROW_IN_TRACK } from '@/lib/NoteData';
 import { TapNote } from '@/lib/NoteTypes';
 
 describe('TrackMap', () => {
@@ -67,10 +67,6 @@ describe('TrackMap', () => {
         const tn2 = new TapNote();
         const tn3 = new TapNote();
         tm.set(1, tn1);
-        tm.set(2, tn2);
-        tm.set(3, tn3);
-
-        tm.set(1, tn1);
         tm.set(3, tn3);
         tm.set(2, tn2);
 
@@ -88,6 +84,79 @@ describe('TrackMap', () => {
             expect(entry[1]).to.equal(expected[i][1]);
             i++;
         }
+    });
+    it('can skip to particular value before iterating', () => {
+        const tm = new TrackMap();
+        const tn1 = new TapNote();
+        const tn2 = new TapNote();
+        const tn3 = new TapNote();
+        tm.set(1, tn1);
+        tm.set(3, tn3);
+        tm.set(2, tn2);
+
+        let expected = [[3, tn3]];
+        let i = 0;
+        for (const entry of tm.entries(3)) {
+            expect(entry[0]).to.equal(expected[i][0]);
+            expect(entry[1]).to.equal(expected[i][1]);
+            i++;
+        }
+        expected = [[2, tn2], [1, tn1]];
+        i = 0;
+        for (const entry of tm.reverseEntries(2)) {
+            expect(entry[0]).to.equal(expected[i][0]);
+            expect(entry[1]).to.equal(expected[i][1]);
+            i++;
+        }
+    });
+    it('can be limited to a range while iterating', () => {
+        const tm = new TrackMap();
+        const tn3 = new TapNote();
+        const tn10 = new TapNote();
+        const tn15 = new TapNote();
+        const tn20 = new TapNote();
+        const tn25 = new TapNote();
+        tm.set(3, tn3);
+        tm.set(10, tn10);
+        tm.set(15, tn15);
+        tm.set(20, tn20);
+        tm.set(25, tn25);
+
+        let expected = [[10, tn10], [15, tn15], [20, tn20]];
+        let i = 0;
+        for (const entry of tm.entries(10, 20)) {
+            expect(entry[0]).to.equal(expected[i][0]);
+            expect(entry[1]).to.equal(expected[i][1]);
+            i++;
+        }
+        expected = expected.reverse();
+        i = 0;
+        for (const entry of tm.reverseEntries(20, 10)) {
+            expect(entry[0]).to.equal(expected[i][0]);
+            expect(entry[1]).to.equal(expected[i][1]);
+            i++;
+        }
+    });
+    it('supports FOREACH_NONEMPTY_ROW_IN_TRACK', () => {
+        const tm = new TrackMap();
+        const tn1 = new TapNote();
+        const tn3 = new TapNote();
+        const tn5 = new TapNote();
+        tm.set(1, tn1);
+        tm.set(3, tn3);
+        tm.set(5, tn5);
+
+        // TODO: find a way to have this work when nd.tapNotes is encapsulated
+        // TODO: this dumbass iterator just iterate sthe actual notedata object.
+        // SEE IF WE NEED THIS BEFORE DOING IT
+        // let i = 0;
+        // const nd = new NoteData();
+        // nd.setNumTracks(1);
+        // nd.tapNotes[0] = tm;
+        // FOREACH_NONEMPTY_ROW_IN_TRACK(nd, 0, 0, (ndata, track, row) => {
+        //     expect()
+        //     i++;
+        // });
     });
     // TODO: a test for how the iterator acts when you go .next(), .set() a new value in between
     // two existing values, then .next() again. Does the iterator use the live array?

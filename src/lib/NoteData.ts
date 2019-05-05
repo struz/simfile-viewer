@@ -42,9 +42,9 @@ export class TrackMap {
 
     // Iterator wrappers
     /** Wrapper for map.entries() that ensures that entries are looped in ascending order. */
-    public entries() {
+    public entries(startAt?: number, endAt?: number) {
         this.sort();
-        return new TrackMapIterator(this.map, IteratorDirection.Forwards);
+        return new TrackMapIterator(this.map, IteratorDirection.Forwards, startAt, endAt);
     }
     public keys() {
         this.sort();
@@ -63,9 +63,9 @@ export class TrackMap {
     // If we were to implement the reverse iteration using arrays we would lose
     // some efficiency, so we take the hit in terms of memory to store a
     // second copy of the map.
-    public reverseEntries() {
+    public reverseEntries(startAt?: number, endAt?: number) {
         this.sort();
-        return new TrackMapIterator(this.reverseMap, IteratorDirection.Backwards);
+        return new TrackMapIterator(this.reverseMap, IteratorDirection.Backwards, startAt, endAt);
     }
     public reverseKeys() {
         this.sort();
@@ -169,12 +169,16 @@ class TrackMapIterator implements IterableIterator<[number, TapNote]> {
         if (this.start === undefined) { return; }
 
         // Set the iterator to start at the given index
-        let result = this.next();
+        // We need to use this.it.next() rather than this.next() so that
+        // we get fine grained control over how we store lastNextResult and don't
+        // skip too far ahead with extra this.it.next() calls.
+        let result = this.it.next();
         while (!result.done) {
             if (TrackMapIterator.compare(result.value[0], this.start, this.direction)) {
+                this.lastNextResult = result;
                 return;
             }
-            result = this.next();
+            result = this.it.next();
         }
     }
 
@@ -183,6 +187,16 @@ class TrackMapIterator implements IterableIterator<[number, TapNote]> {
             this.lastNextResult = this.it.next();
         }
         const ret = this.lastNextResult;
+
+        // If we've been told to end at a certain point and we're at that point
+        // then send a done IteratorResult and stop iterating.
+        if (this.end !== undefined) {
+            if (TrackMapIterator.compare(ret.value[0], this.end, this.direction)) {
+                return {value: ret.value, done: true};
+            }
+        }
+
+        // Otherwise keep iterating as usual
         this.lastNextResult = this.it.next();
         return ret;
     }
@@ -211,13 +225,20 @@ class TrackMapIterator implements IterableIterator<[number, TapNote]> {
 
 /** Act on each non empty row in the specific track. */
 export function FOREACH_NONEMPTY_ROW_IN_TRACK(
-    nd: NoteData, track: number, row: number, fn: () => void) {
+    nd: NoteData, track: number, row: number,
+    fn: (nd: NoteData, track: number, row: number) => void) {
     const it = nd.tapNotes[track].entries();
     let result = it.next();
     while (!result.done) {
-        fn();
+        fn(nd, track, row);
+        result = it.next();
     }
 }
+/** Act on each non empty row in the specified track within the specified range. */
+
+/** Act on each non empty row in the specified track within the specified range, going in reverse order. */
+/** Act on each non empty row for all of the tracks. */
+/** Act on each non empty row for all of the tracks within the specified range. */
 
 /** Holds data about the notes that the player is supposed to hit. */
 export class NoteData {
