@@ -288,13 +288,15 @@ export class NoteData {
         // TODO: I think I can improve the original application's performance by not
         // doing ANOTHER .get() here, but instead just returning the TapNote()
         // out of the function. Or keeping a constant iterator which can straight return the value.
-        // IMPORTANT: optimise later, only if performance sucks
+        // Optimise later, only if performance suffers.
         const trackMap = this.tapNotes[track];
         const noteRow = trackMap.get(row);
+        // The distinction betwen this and findTapNote is that this returns an empty note
+        // if the note doesn't explicitly exist.
         return (noteRow === undefined) ? TapNotes.newEmpty() : noteRow;
     }
 
-    public findTapNote(track: number, row: number) { throw new NotImplementedError(); }
+    public findTapNote(track: number, row: number): TapNote | undefined { return this.tapNotes[track].get(row); }
     public removeTapNote(track: number, row: number) { this.tapNotes[track].delete(row); }
 
     // I wonder if we'll need this - Struz
@@ -443,13 +445,39 @@ export class NoteData {
     /* Determine if a hold note lies on the given spot. Return true if so.  If
      * pHeadRow is non-nullptr, return the row of the head. (Note that this returns
      * false if a hold head lies on iRow itself.) */
-    public isHoldNoteAtRow(track: number, row: number, headRow: number[]) {
+    public isHoldNoteAtRow(track: number, row: number, headRow: PassByRef<number>) {
         // headRow is really a pass-by-ref single number
 
         /* Starting at iRow, search upwards. If we find a TapNoteType_HoldHead, we're within
          * a hold. If we find a tap, mine or attack, we're not--those never lie
          * within hold notes. Ignore autoKeysound. */
-        // IMPORTANT: need to solve the iteration problem RIGHT NOW
+        for (const rowPbr = {value: row}; this.getPrevTapNoteRowForTrack(track, rowPbr) && rowPbr.value >= 0;) {
+            const tn = this.getTapNote(track, rowPbr.value);
+            switch (tn.type) {
+                case TapNoteType.HoldHead:
+                    if (tn.duration + rowPbr.value < row) {
+                        return false;
+                    }
+                    headRow.value = rowPbr.value;
+                    return true;
+
+                case TapNoteType.Tap:
+                case TapNoteType.Mine:
+                case TapNoteType.Attack:
+                case TapNoteType.Lift:
+                case TapNoteType.Fake:
+                    return false;
+
+                case TapNoteType.Empty:
+                case TapNoteType.AutoKeysound:
+                    // ignore
+                    continue;
+                default:
+                    throw new Error(`Unknwon TapNoteType: ${tn.type}`);
+            }
+        }
+
+        return false;
     }
     // TODO: finish me off sometime from NoteData.h
 }

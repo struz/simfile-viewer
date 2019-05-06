@@ -46,7 +46,7 @@ describe('NoteLoaderSM', () => {
         expect(song.specifiedBpmMax, 'specifiedBpmMax').to.equal(0);
         expect(song.displayBpmType, 'bpmType').to.equal(DisplayBPM.ACTUAL);
 
-        // TODO: check stops properly
+        // TODO: check stops properly in a gimmick chart
         // We don't parse #BGCHANGES
         // We don't parse #KEYSOUNDS
 

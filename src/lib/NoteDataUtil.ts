@@ -92,7 +92,7 @@ export class NoteDataUtil {
                 // Now for the fun stuff
                 for (let trackIndex = 0; trackIndex < numTracks; trackIndex++) {
                     const noteChar = line.charAt(trackIndex);
-                    const tn = this.parseTapNoteData(noteChar, pn, out);
+                    const tn = this.parseTapNoteData(noteChar, out, trackIndex, noteRow);
 
                     // Optimization: if we pass TAP_EMPTY, NoteData will do a search
                     // to remove anything in this position.  We know that there's nothing
@@ -123,11 +123,15 @@ export class NoteDataUtil {
 
     /** Parse a single character into a TapNote.
      * @param noteChar the text character defining the qualities of the note.
-     * @param pn the player number we are parsing for.
      * @param nd the NoteData to parse the note into. This is required for finding hold starts.
+     * @param track the track that we're parsing.
+     * @param noteRow the note row this note is on.
      * @returns A new TapNote.
      */
-    public static parseTapNoteData(noteChar: string, pn: PlayerNumber, nd: NoteData): TapNote {
+    public static parseTapNoteData(noteChar: string,
+                                   nd: NoteData,
+                                   track: number,
+                                   noteRow: number): TapNote {
         let tn: TapNote = TapNotes.newEmpty();
 
         switch (noteChar) {
@@ -142,13 +146,17 @@ export class NoteDataUtil {
                 break;
             case '3':
                 // This is the end of a hold, search for the beginning
-                // TODO pass by ref
-                const headRow = 0;
-                // if (!nd.isHoldNoteAtRow(track, index, headRow)) {
-
-                // }
-                // IMPORTANT: handle this search
-
+                const headRow = {value: 0};
+                if (!nd.isHoldNoteAtRow(track, noteRow, headRow)) {
+                    console.warn(`Unmatched 3 in track=${track} for noteRow=${noteRow}`);
+                } else {
+                    const holdNote = nd.findTapNote(track, headRow.value);
+                    if (holdNote === undefined) {
+                        throw new Error(`holdNote should never be undefined: ${track}, ${headRow.value}`);
+                    }
+                    holdNote.duration = noteRow - headRow.value;
+                }
+                // This won't write tn, but keep parsing normally anyway.
                 break;
             case 'M': tn = TapNotes.newOriginalMine(); break;
             case 'K': tn = TapNotes.newOriginalAutoKeysound(); break;

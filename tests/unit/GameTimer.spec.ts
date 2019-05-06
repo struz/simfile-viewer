@@ -1,7 +1,6 @@
 // tslint:disable: max-line-length
 
 import { expect } from 'chai';
-import { Helpers } from '@/lib/GameConstantsAndTypes';
 import GameTimer from '@/lib/GameTimer';
 
 const MICROSECONDS_PER_SECOND = 1000000;
