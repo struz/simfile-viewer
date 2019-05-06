@@ -1,8 +1,9 @@
 // tslint:disable: max-line-length
 
 import { expect } from 'chai';
-import NoteData from '@/lib/NoteData';
+import NoteData, { FOREACH_NONEMPTY_ROW_IN_TRACK, FOREACH_NONEMPTY_ROW_ALL_TRACKS } from '@/lib/NoteData';
 import { TapNote, TapNoteType } from '@/lib/NoteTypes';
+import { PassByRef } from '@/lib/GameConstantsAndTypes';
 
 describe('NoteData', () => {
     const generateTapNote = () => {
@@ -54,22 +55,31 @@ describe('NoteData', () => {
     });
 
     it('loops through one track of note data', () => {
-        // Mirrors FOREACH_NONEMPTY_ROW_IN_TRACK
-        const track = 0;
         let i = 0;
-        for (const row = {value: -1}; nd.getNextTapNoteRowForTrack(track, row); row.value++) {
+        const track = 0;
+        const testFn = (row: PassByRef<number>) => {
             expect(nd.getTapNote(track, row.value)).to.equal(expectedTracks[track][i][1]);
             i++;
+        };
+
+        // Mirrors FOREACH_NONEMPTY_ROW_IN_TRACK
+        for (const row = {value: -1}; nd.getNextTapNoteRowForTrack(track, row); row.value++) {
+            testFn(row);
         }
+
+        // Tests FOREACH_NONEMPTY_ROW_IN_TRACK
+        const outerRow = {value: 0};
+        i = 0;
+        FOREACH_NONEMPTY_ROW_IN_TRACK(testFn, nd, track, outerRow);
+        expect(outerRow.value).to.not.equal(0);
     });
 
     it('loops through multiple tracks of note data', () => {
         // This one is an interesting function. It gets the next non empty tap note row,
         // but we still have to iterate through the rows to get the tap note(s). This could
         // probably be optimised - Struz
-        // Mirrors FOREACH_NONEMPTY_ROW_ALL_TRACKS
-        for (const row = {value: -1}; nd.getNextTapNoteRowForAllTracks(row); row.value++) {
-            // This row isn't empty so find the non-empty tap note(s)
+
+        const testFn = (row: PassByRef<number>) => {
             for (let track = 0; track < nd.getNumTracks(); track++) {
                 const tn = nd.getTapNote(track, row.value);
                 if (tn.type !== TapNoteType.Empty) {
@@ -81,28 +91,21 @@ describe('NoteData', () => {
                     }
                 }
             }
+        };
+
+        // Mirrors FOREACH_NONEMPTY_ROW_ALL_TRACKS
+        for (const row = {value: -1}; nd.getNextTapNoteRowForAllTracks(row); row.value++) {
+            // This row isn't empty so find the non-empty tap note(s)
+            testFn(row);
         }
+
+        // Tests FOREACH_NONEMPTY_ROW_ALL_TRACKS
+        const outerRow = {value: 0};
+        FOREACH_NONEMPTY_ROW_ALL_TRACKS(testFn, nd, outerRow);
+        expect(outerRow.value).to.not.equal(0);
     });
 
-    it('allows changing data while iterating', () => {
-        // IMPORTANT: this is probably going to die because insertion order + map switching
-        // need to come up with a nicer way to handle this so we don't just iterate past the
-        // end of the map. This requires a lot of careful thought about the use case.
-        // If I choose a particularly different data structure / layout then I can just hide it
-        // via the public functions anyway.
-
-        // The main things we're looking for in this test are that inserting data into the
-        // track during iteration doesn't:
-        // - cause us to iterate beyond the end of the map, into new elements (since map is iterate via insertion order)
-        // - cause us to get the wrong values during the iteration
-        // We also want to test the same with DELETION
-
-        // TODO: test case where we're inserting a NEW note and not changing a note.
-        // That one will probably cause iteration beyond the end.
-        // TODO: update the TrackMap class so that if we're inserting at an already present
-        // value, then we don't sort.
-        // TODO: change to use nd rather than noteData
-
+    it('allows .set() on existing rows while iterating', () => {
         const newTapNote = generateTapNote();
         const track = 0;
         let i = 0;
@@ -129,5 +132,76 @@ describe('NoteData', () => {
             }
             i++;
         }
+        expect(i).to.equal(expectedTracks[track].length);
     });
+
+    it('allows .set() on new rows behind the iterator while iterating', () => {
+        const newTapNote = generateTapNote();
+        const track = 0;
+        let i = 0;
+        // Loop through the track, verify the data, and midway through add a TapNote behind us
+        for (const row = {value: -1}; nd.getNextTapNoteRowForTrack(track, row); row.value++) {
+            // Expect that we don't head past the end
+            expect(i).to.be.lessThan(expectedTracks[track].length);
+            expect(nd.getTapNote(track, row.value)).to.equal(expectedTracks[track][i][1]);
+            if (i === 2) {
+                // Add the TapNote behind us
+                newTapNote.type = TapNoteType.Mine;
+                nd.setTapNote(track, 20, newTapNote);
+            }
+            i++;
+        }
+
+        // Loop through again and check for the changed TapNote
+        i = 0;
+        for (const row = {value: -1}; nd.getNextTapNoteRowForTrack(track, row); row.value++) {
+            if (row.value === 20) {
+                expect(nd.getTapNote(track, row.value)).to.equal(newTapNote);
+            } else {
+                expect(nd.getTapNote(track, row.value)).to.equal(expectedTracks[track][i][1]);
+                i++;
+            }
+        }
+        expect(i).to.equal(expectedTracks[track].length);
+    });
+
+    it('allows .set() on new rows ahead of the iterator while iterating', () => {
+        // .set() on rows ahead should result in the iterator picking up the new rows
+        // as we get to them, when using the below pattern. It would likely work
+        // differently if we just kept the same iterator.
+        const newTapNote = generateTapNote();
+        const track = 0;
+        let i = 0;
+        // Loop through the track, verify the data, and midway through add a TapNote ahead of us
+        for (const row = {value: -1}; nd.getNextTapNoteRowForTrack(track, row); row.value++) {
+            // Expect that we don't head past the end
+            expect(i).to.be.lessThan(expectedTracks[track].length);
+            if (i === 2) {
+                // Add the TapNote in front of us
+                newTapNote.type = TapNoteType.Mine;
+                nd.setTapNote(track, 150, newTapNote);
+            }
+            if (row.value === 150) {
+                expect(nd.getTapNote(track, row.value)).to.equal(newTapNote);
+            } else {
+                expect(nd.getTapNote(track, row.value)).to.equal(expectedTracks[track][i][1]);
+                i++;
+            }
+        }
+
+        // Loop through again and check for the changed TapNote
+        i = 0;
+        for (const row = {value: -1}; nd.getNextTapNoteRowForTrack(track, row); row.value++) {
+            if (row.value === 150) {
+                expect(nd.getTapNote(track, row.value)).to.equal(newTapNote);
+            } else {
+                expect(nd.getTapNote(track, row.value)).to.equal(expectedTracks[track][i][1]);
+                i++;
+            }
+        }
+        expect(i).to.equal(expectedTracks[track].length);
+    });
+
+    // TODO: iterator .delete() test. Just assuming for now.
+    // TODO: probably refactor these into table tests if we can.
 });

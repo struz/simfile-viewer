@@ -235,26 +235,26 @@ class TrackMapIterator implements IterableIterator<[number, TapNote]> {
     // TODO: fill this out when I understand more about the use cases
 }
 
+// Helper functions that were #defined in C++. Translated with the same format for clarity.
 /** Act on each non empty row in the specific track. */
 export function FOREACH_NONEMPTY_ROW_IN_TRACK(
-    nd: NoteData, track: number, row: number,
-    fn: (nd: NoteData, track: number, row: number) => void) {
-    const it = nd.tapNotes[track].entries();
-    let result = it.next();
-    while (!result.done) {
-        fn(nd, track, row);
-        result = it.next();
+    fn: (row: PassByRef<number>) => void,
+    nd: NoteData, track: number, row: PassByRef<number>) {
+        // Takes row in so that it can pass it back out again if necessary
+        for (row.value = -1; nd.getNextTapNoteRowForTrack(track, row); row.value++) {
+            fn(row);
+        }
     }
-}
 /** Act on each non empty row in the specified track within the specified range. */
 
 /** Act on each non empty row in the specified track within the specified range, going in reverse order. */
 /** Act on each non empty row for all of the tracks. */
 export function FOREACH_NONEMPTY_ROW_ALL_TRACKS(
-    nd: NoteData, row: number, fn: (nd: NoteData, row: number) => void) {
-        const rowPbr = {value: row};
-        const it = nd.getNextTapNoteRowForAllTracks(rowPbr);
-}
+    fn: (row: PassByRef<number>) => void, nd: NoteData, row: PassByRef<number>) {
+        for (row.value = -1; nd.getNextTapNoteRowForAllTracks(row); row.value++) {
+            fn(row);
+        }
+    }
 /** Act on each non empty row for all of the tracks within the specified range. */
 
 /** Holds data about the notes that the player is supposed to hit. */
