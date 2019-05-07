@@ -270,5 +270,21 @@ export class Helpers {
         }
         return float;
     }
+
+    /** Interpolate within the ranges and interlopant. */
+    public static lerp(x: number, l: number, h: number) {
+        return (h - l) * x + l;
+    }
+
+    /** Scale the target number so that the two targets match.
+     *
+     * This does not modify x, so it MUST assign the result to something!
+     * Do the multiply before the divide so that integer scales have more precision.
+     *
+     * One such example: scale(x, 0, 1, L, H); interpolate between L and H.
+     */
+    public static scale(x: number, l1: number, h1: number, l2: number, h2: number) {
+        return ( l1 === 0 && h1 === 1 ) ? Helpers.lerp(x, l2, h2) : (x - l1) * (h2 - l2) / (h1 - l1) + l2;
+    }
 }
 export default Helpers;

@@ -9,3 +9,9 @@ export function DEBUG_ASSERT(cond: boolean) {
         console.trace();
     }
 }
+
+export function ASSERT(cond: boolean, message: string) {
+    if (!cond) {
+        throw new Error(message);
+    }
+}

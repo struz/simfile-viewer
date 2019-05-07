@@ -136,4 +136,4 @@ export class GameTimer {
 }
 export default GameTimer;
 
-const zeroTimer = new GameTimer(0, 0);
+export const gZeroTimer = new GameTimer(0, 0);

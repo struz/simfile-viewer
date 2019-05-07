@@ -63,7 +63,6 @@ export class TapNote {
         return tapNote;
     }
 
-    // IMPORTANT: finish me
     /** The core note type that is about to cross the target area. */
     public type: TapNoteType = TapNoteType.Empty;
     /** The sub type of the note. This is only used if the type is HoldHead. */

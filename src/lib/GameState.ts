@@ -3,12 +3,13 @@ import TimingData from './TimingData';
 import SongPosition from './SongPosition';
 import { PlayerState } from './PlayerState';
 import Helpers from './GameConstantsAndTypes';
-import { GameTimer } from './GameTimer';
+import { GameTimer, gZeroTimer } from './GameTimer';
 import { Steps } from './Steps';
+import Song from './Song';
 
 /** Holds all the state about the game. A singleton. */
 export class GameState {
-    // Global state from Actors, might need moving to another place
+    // Global state from Actors.h, might need moving to another place
     public static currentBgmTime = 0;
     public static currentBgmBeat = 0;
 
@@ -30,8 +31,10 @@ export class GameState {
     }
     private static instance: GameState;
 
+    public curSong: Song | undefined;
+
     // Stuff used in gameplay
-    public curSteps: Steps[]; // One inde per player; A broadcast on change pointer in C++
+    public curSteps: Steps[]; // One index per player; A broadcast on change pointer in C++
     public position: SongPosition = new SongPosition();
 
     public hasteRate: number;
@@ -45,7 +48,6 @@ export class GameState {
 
     /**
      * Is the game right now using Song timing or Steps timing?
-     *
      * Different options are available depending on this setting.
      */
     public isUsingStepTiming = true;
@@ -74,6 +76,58 @@ export class GameState {
         this.paused = false;
     }
 
+    /** All the logic involved with loading a new song. */
+    public loadNextSong(newSong: Song | undefined) {
+        this.resetMusicStatistics()
+        if (newSong === undefined) {
+            return;
+        }
+
+        this.setCurSong(newSong);
+        // Screen.setupSong()
+        // Sets steps display
+    }
+
+    /** Change the current song. */
+    public setCurSong(newSong: Song | undefined) {
+        if (this.curSong !== undefined) {
+            // TODO: release lookup data for the old song
+        }
+        console.log('changed song!');
+        this.curSong = newSong;
+        // TODO: broadcast song has changed.
+        if (this.curSong !== undefined) {
+            // TODO: request lookup data for the new song
+        }
+    }
+
+    /** Update the game state.
+     * @param delta The time that has passed since the last update.
+     */
+    public update(delta: number) {
+        // FOREACH_PlayerNumber
+        // TODO: fix this, just p1 for now
+        this.playerState[0].update(delta);
+    }
+
+    public resetMusicStatistics() {
+        this.position.reset();
+        this.lastPositionTimer.touch();
+        this.lastPositionSeconds = 0;
+
+        this.setBgmTime(0, 0, 0, 0);
+        // FOREACH_PlayerNumber
+        // TODO: fix
+        this.playerState[0].position.reset();
+    }
+
+    public getSongPercent(beat: number) {
+        // 0 = first step, 1 = last step
+        if (this.curSong === undefined) { return 0; }
+        const curTime = this.curSong.songTiming.getElapsedTimeFromBeat(beat);
+        return (curTime - this.curSong.firstSecond) / this.curSong.lastSecond;
+    }
+
     public setBgmTime(time: number, beat: number, timeNoOffset: number, beatNoOffset: number) {
         GameState.currentBgmTime = time;
         GameState.currentBgmBeat = beat;
@@ -90,7 +144,7 @@ export class GameState {
         GameState.currentBgmBeatPlayerNoOffset[pn] = beatNoOffset;
     }
 
-    public updateSongPosition(positionSeconds: number, timing: TimingData, timestamp: GameTimer) {
+    public updateSongPosition(positionSeconds: number, timing: TimingData, timestamp: GameTimer = gZeroTimer) {
         /* It's not uncommon to get a lot of duplicated positions from the sound
          * driver, like so: 13.120953,13.130975,13.130975,13.130975,13.140998,...
          * This causes visual stuttering of the arrows. To compensate, keep a
@@ -119,4 +173,8 @@ export class GameState {
             GameState.getInstance().position.songBeatNoteOffset);
     }
 }
-export default GameState;
+const GAMESTATE = GameState.getInstance();
+
+// TODO: fixme to be a proper class
+export const gPlayingSteps: TimingData = new TimingData();
+export default GAMESTATE;

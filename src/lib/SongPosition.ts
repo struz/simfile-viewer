@@ -21,7 +21,7 @@ export class SongPosition {
     public songBeatVisible = 0;
 
     public reset() {
-        // this.musicSecondsVisible = 0;
+        this.musicSecondsVisible = 0;
         this.songBeatVisible = 0;
 
         this.musicSeconds = 0;

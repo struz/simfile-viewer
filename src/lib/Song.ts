@@ -38,12 +38,13 @@ export class Song {
     // Data for translating beats<->seconds
     public songTiming: TimingData = new TimingData();
 
+    // These 3 were private in C++ but we've made them public here for now
     // The first second that a note is hit
-    private firstSecond = 0;
+    public firstSecond = 0;
     // The last second that a note is hit
-    private lastSecond = 0;
+    public lastSecond = 0;
     // The last second of the song for playing purposes
-    private specifiedLastSecond = 0;
+    public specifiedLastSecond = 0;
 
     // The steps that belong to this Song
     private steps: Steps[];
