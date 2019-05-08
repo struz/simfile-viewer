@@ -1,9 +1,11 @@
 // tslint:disable: max-classes-per-file
-import { TimingSegment, TimingSegmentType, SegmentEffectType, TimeSignatureSegment } from './TimingSegments';
+import { TimingSegment, TimingSegmentType, SegmentEffectType, TimeSignatureSegment, BPMSegment, TickcountSegment } from './TimingSegments';
 import { NotImplementedError } from './Error';
 import GAMESTATE from './GameState';
 import { DEBUG_ASSERT, ASSERT } from './Debug';
 import Helpers, { PassByRef } from './GameConstantsAndTypes';
+import NoteHelpers from './NoteTypes';
+import { setFlagsFromString } from 'v8';
 
 const INVALID_INDEX: number = -1;
 
@@ -22,7 +24,19 @@ enum SearchMode {
     NONE,
     BEAT,
     SECOND,
-};
+}
+
+/** Simple struct for finding events in timing data. */
+class FindEventStatus {
+    public bpm = 0;
+    public warp = 0;
+    public stop = 0;
+    public delay = 0;
+    public lastRow = 0;
+    public lastTime = 0;
+    public warpDestination = 0;
+    public isWarping = false;
+}
 
 /** Struct for passing around timing info. */
 export class DetailedTimeInfo {
@@ -107,6 +121,38 @@ export class TimingData {
         return result.value[1][0];
     }
 
+    public static findEvent(
+        eventRow: PassByRef<number>, eventType: PassByRef<number>,
+        status: FindEventStatus, beat: number, findMarker: boolean, bpms: TimingSegment[],
+        warps: TimingSegment[], stops: TimingSegment[], delays: TimingSegment[]) {
+            if (status.isWarping && NoteHelpers.beatToNoteRow(status.warpDestination) < eventRow.value) {
+                eventRow.value = NoteHelpers.beatToNoteRow(status.warpDestination);
+                eventType.value = Found.WARP_DESTINATION;
+            }
+            if (status.bpm < bpms.length && bpms[status.bpm].getRow() < eventRow.value) {
+                eventRow.value = bpms[status.bpm].getRow();
+                eventType.value = Found.BPM_CHANGE;
+            }
+            if (status.delay < delays.length && delays[status.delay].getRow() < eventRow.value) {
+                eventRow.value = delays[status.delay].getRow();
+                eventType.value = Found.DELAY;
+            }
+            if (findMarker && NoteHelpers.beatToNoteRow(beat) < eventRow.value) {
+                eventRow.value = NoteHelpers.beatToNoteRow(beat);
+                eventType.value = Found.MARKER;
+            }
+            if (status.stop < stops.length && stops[status.stop].getRow() < eventRow.value) {
+                // Because of the way we PassByRef we need to assign a value like this to make it separate
+                const tmpRow = {value: eventRow.value};
+                eventRow.value = stops[status.stop].getRow();
+                eventType.value = (tmpRow.value === eventRow.value) ? Found.STOP_DELAY : Found.STOP;
+            }
+            if (status.warp < warps.length && warps[status.warp].getRow() < eventRow.value) {
+                eventRow.value = warps[status.warp].getRow();
+                eventType.value = Found.WARP;
+            }
+        }
+
     /** The initial offset of a song. */
     private beat0OffsetInSecs: number = 0;
     // All of the following vectors must be sorted before gameplay.
@@ -155,8 +201,6 @@ export class TimingData {
     public addSegment(seg: TimingSegment) {
         // TODO: add debug logging flag and put a debug log here
         const tst = seg.getType();
-
-        // TODO: omg this is a complex function
         const segs = this.timingSegments[tst];
 
         // Optimisation: if this is our first segment, push and return
@@ -281,6 +325,41 @@ export class TimingData {
         }
     }
 
+    public noteRowToMeasureAndBeat(
+        noteRow: number, measureIndexOut: PassByRef<number>,
+        beatIndexOut: PassByRef<number>, rowsRemainder: PassByRef<number>) {
+            // TODO: this function could have some weirdness given it was all with ints in
+            // C++ and we're using number here. If anything goes wrong try more Math.truncs
+            //debugger;
+            measureIndexOut.value = 0;
+            const tSigs = this.getTimingSegments(TimingSegmentType.TIME_SIG);
+            for (let i = 0; i < tSigs.length; i++) {
+                const curSig = (tSigs[i] as TimeSignatureSegment);
+                const segmentEndRow = (i + 1 === tSigs.length) ? Number.MAX_SAFE_INTEGER : curSig.getRow();
+
+                const rowsPerMeasureThisSegment = curSig.getNoteRowsPerMeasure();
+                debugger;
+                if (noteRow >= curSig.getRow()) {
+                    // noteRow lands in this segment
+                    const numRowsThisSegment = noteRow - curSig.getRow();
+                    // don't round up (below)
+                    const numMeasuresThisSegment = Math.trunc(numRowsThisSegment / rowsPerMeasureThisSegment);
+                    measureIndexOut.value += numMeasuresThisSegment;
+                    // These are all integers so we need to trunc for our callers benefit
+                    beatIndexOut.value = Math.trunc(numRowsThisSegment / rowsPerMeasureThisSegment);
+                    rowsRemainder.value = numRowsThisSegment % rowsPerMeasureThisSegment;
+                    return;
+                } else {
+                    // noteRow lands after this segment
+                    const numRowsThisSegment = segmentEndRow - curSig.getRow();
+                    const numMeasuresThisSegment = Math.trunc(
+                        (numRowsThisSegment + rowsPerMeasureThisSegment - 1) / rowsPerMeasureThisSegment); // Round up
+                    measureIndexOut.value += numMeasuresThisSegment;
+                }
+            }
+            throw new Error('Failed to get measure and beat for note row');
+        }
+
     public getSegmentIndexAtRow(tst: TimingSegmentType, row: number) {
         const segs = this.timingSegments[tst];
         if (segs.length === 0) {
@@ -312,29 +391,57 @@ export class TimingData {
         this.getDetailedInfoForSecondNoOffset(args);
     }
 
-    public getDetailedInfoForSecondNoOffset(args: DetailedTimeInfo) {
-        return;
-        if (this.empty()) { return; }
+    public getBeatFromElapsedTime(second: number): number {
+        if (this.empty()) { return 0; }
+        const globOff = 0; // We don't support offset yet -Struz
         if (this.lineSegments.length > 0) {
-            // IMPORTANT: we really need these lookups to work but for now fuck em
-            // An offset of 0 should be okay til we see what we're dealing with.
-            // Just use charts without stops or BPM changes.
+            return this.getLineBeatFromSecond(second + globOff);
+        } else {
+            const segment = { value: new LineSegment() };
+            this.prepareLineLookup(SearchMode.SECOND, second + globOff, segment);
+            if (segment.value.startSecond === segment.value.endSecond) {
+                return segment.value.endBeat;
+            }
+            return Helpers.scale(second, segment.value.startSecond, segment.value.endSecond,
+                segment.value.startBeat, segment.value.endBeat);
         }
     }
 
     public getBeatFromElapsedTimeNoOffset(second: number): number {
-        return 0;
-        throw new NotImplementedError();
+        // We don't support offset yet so this function does the same. Pass through. -Struz
+        return this.getBeatFromElapsedTime(second);
     }
 
-    public getBeatFromElapsedTime(second: number): number {
-        return 0;
-        throw new NotImplementedError();
+    public getDetailedInfoForSecondNoOffset(args: DetailedTimeInfo) {
+        if (this.empty()) { return 0; }
+        const segment = { value: new LineSegment() };
+        if (this.lineSegments.length > 0) {
+            segment.value = TimingData.findLineSegment(this.segmentsBySecond, args.second);
+        } else {
+            this.prepareLineLookup(SearchMode.SECOND, args.second, segment);
+        }
+        args.bpsOut = segment.value.bps;
+        if (segment.value.timeSegment === null) { throw new Error('segment.timeSegment should never be null'); }
+        switch (segment.value.timeSegment.getType()) {
+            case TimingSegmentType.STOP:
+                args.freezeOut = true;
+                break;
+            case TimingSegmentType.DELAY:
+                args.delayOut = true;
+                break;
+            default:
+                break;
+        }
+        if (segment.value.startSecond === segment.value.endSecond) {
+            args.beat = segment.value.endBeat;
+        } else {
+            args.beat = Helpers.scale(args.second, segment.value.startSecond, segment.value.endSecond,
+                segment.value.startBeat, segment.value.endBeat);
+        }
     }
 
     public getElapsedTimeFromBeatNoOffset(beat: number) {
-        return 0;
-        // IMPORTANT: we really need these lookups to work but for now fuck em
+        // IMPORTANT: we really need these lookups to work
         if (this.empty()) { return 0; }
         if (this.lineSegments.length > 0) {
             return this.getLineSecondFromBeat(beat);
@@ -399,11 +506,189 @@ export class TimingData {
         const warps = this.getTimingSegments(TimingSegmentType.WARP);
 
         // IMPORTANT: finish this later
-        return;
 
         if (searchMode === SearchMode.NONE) {
             this.lineSegments.length = bpms.length + stops.length + delays.length + warps.length;
         }
+        const status = new FindEventStatus();
+
+        // Place an initial bpm segment in negative time before the song begins.
+        // Without this, if there is a stop at beat 0, arrows will not move until
+        // after beat 0 passes. -Kyz
+        const firstBps = (bpms[0] as BPMSegment).getBps();
+        const nextLine = new LineSegment();
+        nextLine.startBeat = -firstBps;
+        nextLine.startSecond = -this.beat0OffsetInSecs - 1;
+        nextLine.endBeat = 0;
+        nextLine.endSecond = -this.beat0OffsetInSecs;
+        nextLine.startExpandSecond = -this.beat0OffsetInSecs - 1;
+        nextLine.endExpandSecond = -this.beat0OffsetInSecs;
+        nextLine.bps = firstBps;
+        nextLine.timeSegment = bpms[0];
+
+        switch (searchMode) {
+            case SearchMode.NONE: this.lineSegments.push(nextLine); break;
+            case SearchMode.BEAT:
+                if (nextLine.endBeat > searchTime) {
+                    searchRet.value = nextLine;
+                    return;
+                }
+                break;
+            case SearchMode.SECOND:
+                if (nextLine.endSecond > searchTime) {
+                    searchRet.value = nextLine;
+                    return;
+                }
+                break;
+            default:
+                break;
+        }
+        nextLine.setForNext();
+
+        let secsPerBeat = 1 / nextLine.bps;
+        let finished = false;
+        // Placement order:
+        //   warp
+        //   delay
+        //   stop
+        //   bpm
+        // Stop and delay segments can be placed as complete lines.
+        // A warp needs to be broken into parts at every stop or delay that occurs
+        // inside it.
+        // When a warp occurs inside a warp, whichever has the greater destination
+        // is used.
+        // A bpm segment is placed when between two other segments.
+        // -Kyz
+        const maxTime = 16777216;
+        let curBpmSegment = bpms[0];
+        let curWapSegment: TimingSegment | null = null;
+        while (!finished) {
+            // TODO: find event, for now just assume we find a BPM change once
+            const eventRow: PassByRef<number> = { value: Number.MAX_SAFE_INTEGER };
+            const eventType: PassByRef<number> = { value: Found.NOT_FOUND };
+            TimingData.findEvent(eventRow, eventType, status, maxTime, false,
+                bpms, warps, stops, delays);
+            // TODO: handle other types of events too
+            if (eventType.value === Found.NOT_FOUND) {
+                nextLine.endBeat = nextLine.startBeat + 1;
+                const secondsChange = nextLine.startSecond + secsPerBeat;
+                nextLine.endSecond = secondsChange;
+                nextLine.endExpandSecond = nextLine.startExpandSecond + secondsChange;
+                nextLine.bps = (curBpmSegment as BPMSegment).getBps();
+                // Extend the current BPM segment into the nextLine
+                nextLine.timeSegment = curBpmSegment;
+                switch (searchMode) {
+                    case SearchMode.NONE: this.lineSegments.push(nextLine); break;
+                    case SearchMode.BEAT:
+                    case SearchMode.SECOND:
+                        searchRet.value = nextLine;
+                        return;
+                    default:
+                        break;
+                }
+                finished = true;
+                break;
+            }
+            // IMPORTANT: warp stuff omitted, put it in later
+            switch (eventType.value) {
+                // TODO: put in the other cases
+                case Found.BPM_CHANGE:
+                    curBpmSegment = bpms[status.bpm];
+                    nextLine.bps = (curBpmSegment as BPMSegment).getBps();
+                    secsPerBeat = 1 / nextLine.bps; // This doesn't seem used, but it was in the code - Struz
+                    status.bpm++;
+                    break;
+                default:
+                    break;
+            }
+            status.lastRow = eventRow.value;
+        }
+        // ASSERT_M(search_mode == SEARCH_NONE, "PrepareLineLookup made it to the end while not in search_mode none.");
+        // m_segments_by_beat and m_segments_by_second cannot be built in the
+        // traversal above that builds m_line_segments because the vector
+        // reallocates as it grows. -Kyz
+          // I don't think this holds true for JS -Struz
+        let curSegmentsByBeat = this.segmentsByBeat.get(0);
+        if (curSegmentsByBeat === undefined) { throw new Error('curSegmentsByBeat should never be undefined'); }
+        let curSegmentsBySecond = this.segmentsBySecond.get(-this.beat0OffsetInSecs);
+        if (curSegmentsBySecond === undefined) { throw new Error('curSegmentsBySecond should never be undefined'); }
+        let curBeat = 0;
+        let curSecond = 0;
+        // Push into segmentsByBeat and segmentsBySecond the lineSegments that were made above
+        for (const seg of this.lineSegments) {
+            // ADD_SEG(beat)
+            if (seg.startBeat > curBeat) {
+                curSegmentsByBeat = this.segmentsByBeat.get(seg.startBeat);
+                if (curSegmentsByBeat === undefined) {
+                    throw new Error('curSegmentsByBeat should never be undefined');
+                }
+                curBeat = seg.startBeat;
+            }
+            curSegmentsByBeat.push(seg);
+            // ADD_SEG(sec)
+            if (seg.startSecond > curSecond) {
+                curSegmentsBySecond = this.segmentsBySecond.get(seg.startSecond);
+                if (curSegmentsBySecond === undefined) {
+                    throw new Error('curSegmentsBySecond should never be undefined');
+                }
+                curSecond = seg.startSecond;
+            }
+            curSegmentsBySecond.push(seg);
+        }
+    }
+
+    public tidyUpData(allowEmpty: boolean) {
+        if (allowEmpty && this.empty()) {
+            return;  // Steps with empty timing data revert to song timing
+        }
+
+        // If there are no BPM segments, provide a default.
+        if (this.timingSegments[TimingSegmentType.BPM].length === 0) {
+            console.warn('Song has no BPM segments, default 60 provided.');
+            this.addSegment(new BPMSegment(0, 60));
+        }
+
+        // Make sure the first BPM segment starts at beat 0.
+        if (this.timingSegments[TimingSegmentType.BPM][0].getRow() !== 0) {
+            this.timingSegments[TimingSegmentType.BPM][0].setRow(0);
+        }
+
+        // If no time signature specified, assume default time for the whole song.
+        if (this.timingSegments[TimingSegmentType.TIME_SIG].length === 0) {
+            this.addSegment(new TimeSignatureSegment(0));
+        }
+
+        // Likewise, if no tickcount signature is specified, assume 4 ticks
+        // per beat for the entire song. The default of 4 is chosen more
+        // for compatibility with the main Pump series than anything else.
+        // (TickcountSegment's constructor handles that now. -- vyhd)
+        if (this.timingSegments[TimingSegmentType.TICKCOUNT].length === 0) {
+            this.addSegment(new TickcountSegment(0));
+        }
+
+        // Have a default combo segment of one just in case.
+        // if (this.timingSegments[TimingSegmentType.COMBO].length === 0) {
+        //     this.addSegment(new ComboSegment(0));
+        // }
+        // TODO: uncomment when we implement combo segments
+
+        // Have a default label segment just in case.
+        // if (this.timingSegments[TimingSegmentType.LABEL].length === 0) {
+        //     this.addSegment(new LabelSegment(0));
+        // }
+        // TODO: uncomment when we implement label segments
+
+        // Always be sure there is a starting speed.
+        // if (this.timingSegments[TimingSegmentType.SPEED].length === 0) {
+        //     this.addSegment(new SpeedSegment(0));
+        // }
+        // IMPORTANT: uncomment when we implement speed segments
+
+        // Always be sure there is a starting scrolling factor.
+        // if (this.timingSegments[TimingSegmentType.SCROLL].length === 0) {
+        //     this.addSegment(new ScrollSegment(0));
+        // }
+        // IMPORTANT: uncomment when we implement speed segments
     }
 }
 export default TimingData;

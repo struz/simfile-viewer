@@ -225,8 +225,9 @@ export class NoteLoaderSM {
         difficulty: string,
         meter: string,
         noteData: string,
+        song: Song,
     ): Steps {
-        const steps = new Steps(noteData);
+        const steps = new Steps(noteData, song);
 
         // Backwards compatibility hacks
         switch (stepsType) {
@@ -661,6 +662,7 @@ export class NoteLoaderSM {
                     params[3],
                     params[4],
                     params[6],
+                    song
                 );
                 steps.decompress();
                 song.addSteps(steps);
@@ -676,6 +678,9 @@ export class NoteLoaderSM {
         // Do a cascade through all our data structures to tidy up any edge cases or
         // backwards compatibility issues that exist.
         this.tidyUpData();
+        // In StepMania this is only called when adding the song to the cache.
+        // We have no cache so do it here. -Struz
+        song.tidyUpData(); 
 
         // IMPORTANT: write my own cascade of tidyUpData() functions and call them here
         // Cut out any things that aren't necessary.
@@ -690,49 +695,50 @@ export class NoteLoaderSM {
      * @param msdFile the .sm file data.
      * @returns the Steps we loaded the data into.
      */
-    public static loadNoteDataFromSimfile(msdFile: MsdFile): Steps {
-        for (let i = 0; i < msdFile.getNumValues(); i++) {
-            const numParams = msdFile.getNumParams(i);
-            const params = msdFile.getValue(i);
-            const valueName = params[0].toUpperCase();
+    // NOTE: commented out because currently unused
+    // public static loadNoteDataFromSimfile(msdFile: MsdFile): Steps {
+    //     for (let i = 0; i < msdFile.getNumValues(); i++) {
+    //         const numParams = msdFile.getNumParams(i);
+    //         const params = msdFile.getValue(i);
+    //         const valueName = params[0].toUpperCase();
 
-            // The only tag we care about is the #NOTES tag.
-            if (valueName === 'NOTES' || valueName === 'NOTES2') {
-                if (numParams < 7) {
-                    throw new Error(`.sm file has ${numParams} fields in a #NOTES tag, but should have at least 7.`);
-                }
+    //         // The only tag we care about is the #NOTES tag.
+    //         if (valueName === 'NOTES' || valueName === 'NOTES2') {
+    //             if (numParams < 7) {
+    //                 throw new Error(`.sm file has ${numParams} fields in a #NOTES tag, but should have at least 7.`);
+    //             }
 
-                const stepsType: string = params[1].trim();
-                const description: string = params[2].trim();
-                let difficulty: string = params[3].trim();
+    //             const stepsType: string = params[1].trim();
+    //             const description: string = params[2].trim();
+    //             let difficulty: string = params[3].trim();
 
-                // Hack - if this is a .edit file, fudge the difficulty
-                // TODO: we have no way to know this given the data pasted in,
-                // but StepMania does it by the .edit extension
+    //             // Hack - if this is a .edit file, fudge the difficulty
+    //             // TODO: we have no way to know this given the data pasted in,
+    //             // but StepMania does it by the .edit extension
 
-                // Old version difficulty changes
-                if (difficulty === 'smaniac') {
-                    difficulty = 'Challenge';
-                }
-                if (difficulty === 'hard') {
-                    if (description === 'smaniac' || description === 'challenge') {
-                        difficulty = 'Challenge';
-                    }
-                }
+    //             // Old version difficulty changes
+    //             if (difficulty === 'smaniac') {
+    //                 difficulty = 'Challenge';
+    //             }
+    //             if (difficulty === 'hard') {
+    //                 if (description === 'smaniac' || description === 'challenge') {
+    //                     difficulty = 'Challenge';
+    //                 }
+    //             }
 
-                // OMITTED: if the stepsType, description, and difficulty match, don't load the
-                // data. Probably for performance reasons.
+    //             // OMITTED: if the stepsType, description, and difficulty match, don't load the
+    //             // data. Probably for performance reasons.
 
 
-                const noteData: string = params[6].trim();
-                const steps = new Steps(noteData);
-                steps.decompress();
-                steps.tidyUpData();
-                return steps;
-            }
-        }
-        throw new Error('could not find note data');
-    }
+    //             const noteData: string = params[6].trim();
+    //             const steps = new Steps(noteData);
+    //             steps.decompress();
+    //             steps.tidyUpData();
+    //             return steps;
+    //         }
+    //     }
+    //     throw new Error('could not find note data');
+    // }
 
     /**
      * @brief Perform some cleanup on the loaded song.

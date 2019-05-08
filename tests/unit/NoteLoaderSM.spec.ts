@@ -3,6 +3,7 @@ import NoteLoaderSM from '@/lib/NoteLoaderSM';
 import fs from 'fs';
 import { DisplayBPM } from '@/lib/Steps';
 import MsdFile from '@/lib/MsdFile';
+import { TimingSegmentType, BPMSegment } from '@/lib/TimingSegments';
 
 describe('NoteLoaderSM', () => {
     let bigSkySmFile = '';
@@ -40,7 +41,9 @@ describe('NoteLoaderSM', () => {
         expect(song.musicSampleStartSec, 'musicSampleStartSec').to.equal(178.794);
         expect(song.musicSampleLengthSec, 'musicSampleLength').to.equal(24);
         // We don't parse #SELECTABLE
-        // TODO: for BPMs test all the different display types properly
+        expect(
+            (song.songTiming.getTimingSegments(TimingSegmentType.BPM)[0] as BPMSegment).getBpm(),
+            '#BPMS').to.equal(140);
         // 'Big Sky' doesn't have a #SPECIFIEDBPM tag so it uses ACTUAL
         expect(song.specifiedBpmMin, 'specifiedBpmMin').to.equal(0);
         expect(song.specifiedBpmMax, 'specifiedBpmMax').to.equal(0);

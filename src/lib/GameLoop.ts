@@ -1,6 +1,7 @@
 import GameTimer from './GameTimer';
 import { SOUNDMAN } from './GameSoundManager';
 import GAMESTATE from './GameState';
+import RhythmAssist from './RhythmAssist';
 
 export const gGameplayTimer = new GameTimer();
 
@@ -14,6 +15,7 @@ class GameLoop {
         SOUNDMAN.update(deltaTime);
 
         GAMESTATE.update(deltaTime);
+        RhythmAssist.playTicks();
 
         //console.log(deltaTime);
         // let j = 0;

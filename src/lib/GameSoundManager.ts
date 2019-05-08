@@ -1,4 +1,4 @@
-import GAMESTATE, { gPlayingSteps } from './GameState';
+import GAMESTATE, { gPlaying } from './GameState';
 import NoteHelpers, { ROWS_PER_BEAT } from './NoteTypes';
 import GameLoop from './GameLoop';
 
@@ -24,14 +24,14 @@ export class GameSoundManager {
     // The idea here is to fake the sounds playing for now and just move the song position along
     public update(deltaTime: number) {
         const playbackRate = 1.0;
-        GAMESTATE.updateSongPosition(GAMESTATE.position.musicSeconds + deltaTime
-             * playbackRate, gPlayingSteps);
+        if (gPlaying !== null) {
+            GAMESTATE.updateSongPosition(GAMESTATE.position.musicSeconds + deltaTime
+                    * playbackRate, gPlaying);
+        }
         // NOTE: the above is fudging, when actually playing music we will need to sync
         // by getting the seconds from the song.
-        // return;
 
-        //console.log(`musicSeconds=${GAMESTATE.position.musicSeconds}`);
-        if (GameLoop.totalTime + deltaTime > GameLoop.lastSecondPassed + 1) {
+        if (GameLoop.totalTime + deltaTime > GameLoop.lastSecondPassed + 10) {
             GameLoop.lastSecondPassed = GameLoop.totalTime + deltaTime;
             console.log(`musicSeconds=${GAMESTATE.position.musicSeconds}`);
         }
@@ -43,12 +43,20 @@ export class GameSoundManager {
             rowNow = Math.max(0, rowNow);
 
             const beatNow = rowNow / ROWS_PER_BEAT;
+            // console.log(`beatNow=${beatNow}`);
+            // console.log(`difference=${beatNow - this.beatLastCrossed}`);
 
+            // debugger; // Debugger here because we want to make sure that the beats are crossing properly
             for (let beat = this.beatLastCrossed + 1; beat <= beatNow; beat++) {
+                console.log('crossedbeat');
                 // Broadcast "CrossedBeat" message for all beats crossed since the last update
                 // Need some kind of message queue system but it's single threaded ...
+
+                // What the fuck do these messages actually do? Based on the code they never even
+                // get sent UNLESS the game lags. Maybe thye're catchups? -Struz
             }
 
+            // console.log(`beatLastCrossed=${this.beatLastCrossed}`);
             this.beatLastCrossed = beatNow;
         }
     }

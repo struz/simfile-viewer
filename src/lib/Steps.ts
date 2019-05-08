@@ -1,8 +1,8 @@
 import NoteData from './NoteData';
 import Helpers, { StepsType, Difficulty } from './GameConstantsAndTypes';
-import Song from './Song';
 import TimingData from './TimingData';
 import { NoteDataUtil } from './NoteDataUtil';
+import Song from './Song';
 
 /**
  * Enforce a limit on the number of chars for the description.
@@ -34,6 +34,8 @@ export class Steps {
     public stepsType: StepsType = StepsType.Invalid;
     /** The string form of the StepsType, for dealing with unrecognized styles. */
     public stepsTypeName: string = '';
+    /** The Song these Steps are associated with */
+    public song: Song;
 
     // The name of the edit, or some other useful description.
     // This used to also contain the step author's name.
@@ -63,13 +65,15 @@ export class Steps {
     private noteDataCompressed: string;
     private noteDataIsFilled: boolean = false;
 
-    constructor(noteData: string) {
+    constructor(noteData: string, song: Song) {
         this.noteDataCompressed = noteData;
+        this.song = song;
     }
 
     public getNoteData() { return this.noteData; }
     public getCompressedNoteData() { return this.noteDataCompressed; }
     public isNoteDataFilled() { return this.noteDataIsFilled; }
+    public getTimingData() { return this.timingData.empty() ? this.song.songTiming : this.timingData; }
 
     public decompress() {
         if (this.noteDataIsFilled) {

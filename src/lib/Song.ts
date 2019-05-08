@@ -75,5 +75,13 @@ export class Song {
     public getSteps(index: number) {
         return this.steps[index];
     }
+
+    public tidyUpData() {
+        this.songTiming.tidyUpData(false);
+
+        for (const steps of this.steps) {
+            steps.timingData.tidyUpData(true);
+        }
+    }
 }
 export default Song;

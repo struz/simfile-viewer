@@ -98,6 +98,9 @@ export class GameState {
         // TODO: broadcast song has changed.
         if (this.curSong !== undefined) {
             // TODO: request lookup data for the new song
+            gPlaying = this.curSong.songTiming;
+        } else {
+            gPlaying = null;
         }
     }
 
@@ -176,5 +179,5 @@ export class GameState {
 const GAMESTATE = GameState.getInstance();
 
 // TODO: fixme to be a proper class
-export const gPlayingSteps: TimingData = new TimingData();
+export let gPlaying: TimingData | null = null;
 export default GAMESTATE;
