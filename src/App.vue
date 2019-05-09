@@ -35,15 +35,15 @@ declare global {
   }
 }
 
-;(function () {
+(() => {
   function main() {
-    let stopMain = window.requestAnimationFrame( main );
-    
+    const stopMain = window.requestAnimationFrame( main );
+
     // Your main loop contents
     GameLoop.gameLoop();
-    window.totalTime = GameLoop.totalTime
+    window.totalTime = GameLoop.totalTime;
   }
-  
+
   main(); // Start the cycle
 })();
 // for (let i = 0; i < 1000; i++) {
@@ -63,7 +63,7 @@ import fs from 'fs';
 import GAMESTATE from './lib/GameState';
 
 let bigSkySmFile = '';
-let rawFile = new XMLHttpRequest();
+const rawFile = new XMLHttpRequest();
 rawFile.onreadystatechange = () => {
     if (rawFile.readyState === 4) {
         if (rawFile.status === 200 || rawFile.status === 0) {

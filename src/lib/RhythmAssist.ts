@@ -1,9 +1,14 @@
 import NoteHelpers from './NoteTypes';
 import GAMESTATE, { gPlaying } from './GameState';
 import { FOREACH_NONEMPTY_ROW_ALL_TRACKS_RANGE } from './NoteData';
+import { Howl } from 'howler';
+import clapOgg from '../assets/sounds/assist_clap.ogg';
 
 export class RhythmAssist {
     public static rowLastCrossed = -1;
+    public static clapSound = new Howl({
+        src: [clapOgg],
+    });
 
     public static playTicks() {
         const metronome = false;
@@ -53,6 +58,7 @@ export class RhythmAssist {
                 // TODO: if we implement music rate, /= secondsUntil by the music rate
                 // TODO: when playing the sound use the magic formulae to play in time
                 console.log(`clap @ beat=${tickBeat}`);
+                this.clapSound.play();
             }
         }
 
