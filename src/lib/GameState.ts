@@ -7,6 +7,9 @@ import { GameTimer, gZeroTimer } from './GameTimer';
 import { Steps } from './Steps';
 import Song from './Song';
 
+import { Howl } from 'howler';
+import bigSkyOgg from '../assets/music/bigsky.ogg';
+
 /** Holds all the state about the game. A singleton. */
 export class GameState {
     // Global state from Actors.h, might need moving to another place
@@ -19,6 +22,10 @@ export class GameState {
     public static currentBgmBeatPlayer: number[] = []; // Max entries is PlayerNumber.NUM
     public static currentBgmBeatPlayerNoOffset: number[] = []; // Max entries is PlayerNumber.NUM
     // End global state from Actors
+
+    public static bigSky = new Howl({
+        src: [bigSkyOgg],
+    });
 
     // public static MUSIC_SECONDS_INVALID = -5000;
 
@@ -99,6 +106,7 @@ export class GameState {
         if (this.curSong !== undefined) {
             // TODO: request lookup data for the new song
             gPlaying = this.curSong.songTiming;
+            GameState.bigSky.play();
         } else {
             gPlaying = null;
         }
