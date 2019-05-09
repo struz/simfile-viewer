@@ -662,7 +662,7 @@ export class NoteLoaderSM {
                     params[3],
                     params[4],
                     params[6],
-                    song
+                    song,
                 );
                 steps.decompress();
                 song.addSteps(steps);
@@ -680,7 +680,7 @@ export class NoteLoaderSM {
         this.tidyUpData();
         // In StepMania this is only called when adding the song to the cache.
         // We have no cache so do it here. -Struz
-        song.tidyUpData(); 
+        song.tidyUpData();
 
         // IMPORTANT: write my own cascade of tidyUpData() functions and call them here
         // Cut out any things that aren't necessary.

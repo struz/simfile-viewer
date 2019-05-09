@@ -1,11 +1,13 @@
 import NoteHelpers from './NoteTypes';
 import GAMESTATE, { gPlaying } from './GameState';
+import { FOREACH_NONEMPTY_ROW_ALL_TRACKS } from './NoteData';
 
 export class RhythmAssist {
     public static rowLastCrossed = -1;
 
     public static playTicks() {
         const metronome = true;
+        const clap = true;
 
         // TODO: make this player position rather than overall song position
         // if things don't work properly
@@ -26,6 +28,11 @@ export class RhythmAssist {
 
         // IMPORTANT: also do clap!!
         // IsJudgeableOnRow
+        if (clap) {
+            let clapRow = -1;
+            // FOREACH_NONEMPTY_ROW_ALL_TRACKS_RANGE
+            // IMPORTANT:
+        }
 
         if (metronome && this.rowLastCrossed !== -1) {
             const lastCrossedMeasureIndex = {value: 0};
@@ -40,22 +47,15 @@ export class RhythmAssist {
             timing.noteRowToMeasureAndBeat(songRow, currentMeasureIndex,
                 currentBeatIndex, currentRowsRemainder);
 
-            console.log(`beat=${lastCrossedBeatIndex.value} measure=${lastCrossedMeasureIndex.value}`);
-
             let metronomeRow = -1;
-            let isMeasure = false;
+            let changedMeasure = false;
 
             // If we crossed a measure or a beat, we need to make the metronome sound
             if (lastCrossedMeasureIndex.value !== currentMeasureIndex.value ||
                 lastCrossedBeatIndex.value !== currentBeatIndex.value) {
                     metronomeRow = songRow - currentRowsRemainder.value;
-                    // I really wish I knew what this next line was supposed to do -Struz
-                    isMeasure = currentBeatIndex.value === 0 && currentRowsRemainder.value === 0;
+                    changedMeasure = currentMeasureIndex.value - lastCrossedMeasureIndex.value > 0;
             }
-
-            // TODO: this is wrong, metronome beats coming way too slowly
-            // Seems to be only counting measures, not beats.
-            if (isMeasure) { console.log('yeehaw'); }
 
             if (metronomeRow !== -1) {
                 const tickBeat = NoteHelpers.noteRowToBeat(metronomeRow);
@@ -64,7 +64,7 @@ export class RhythmAssist {
                 // TODO: if we implement music rate, /= secondsUntil by the music rate
 
                 // TODO: synchronisation / "play at time"
-                if (isMeasure) {
+                if (changedMeasure) {
                     console.log('metronome measure');
                 } else {
                     console.log('metronome beat');

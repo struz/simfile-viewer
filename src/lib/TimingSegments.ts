@@ -2,6 +2,7 @@
 // tslint:disable: max-classes-per-file
 
 import NoteHelpers from './NoteTypes';
+import { BEATS_PER_MEASURE } from './NoteDataUtil';
 
 export enum TimingSegmentType {
     BPM,
@@ -287,6 +288,17 @@ export class TimeSignatureSegment extends TimingSegment {
      */
     public getNoteRowsPerMeasure() {
         return NoteHelpers.beatToNoteRow(1) * 4 * this.numerator / this.denominator;
+    }
+
+    /**
+     * Retrieve the number of note rows per beat within the TimeSignatureSegment.
+     *
+     * This is just the number of note rows per measure, divided by the time signature
+     * denominator. For example, in a 4/4 time signature, there are 4 4th note beats
+     * in the measure.
+     */
+    public getNoteRowsPerBeat() {
+        return NoteHelpers.beatToNoteRow(1) * 4 / this.denominator;
     }
 
     public debugPrint() {

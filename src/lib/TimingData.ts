@@ -1,5 +1,6 @@
 // tslint:disable: max-classes-per-file
-import { TimingSegment, TimingSegmentType, SegmentEffectType, TimeSignatureSegment, BPMSegment, TickcountSegment } from './TimingSegments';
+import { TimingSegment, TimingSegmentType, SegmentEffectType,
+     TimeSignatureSegment, BPMSegment, TickcountSegment } from './TimingSegments';
 import { NotImplementedError } from './Error';
 import GAMESTATE from './GameState';
 import { DEBUG_ASSERT, ASSERT } from './Debug';
@@ -330,7 +331,6 @@ export class TimingData {
         beatIndexOut: PassByRef<number>, rowsRemainder: PassByRef<number>) {
             // TODO: this function could have some weirdness given it was all with ints in
             // C++ and we're using number here. If anything goes wrong try more Math.truncs
-            //debugger;
             measureIndexOut.value = 0;
             const tSigs = this.getTimingSegments(TimingSegmentType.TIME_SIG);
             for (let i = 0; i < tSigs.length; i++) {
@@ -338,7 +338,9 @@ export class TimingData {
                 const segmentEndRow = (i + 1 === tSigs.length) ? Number.MAX_SAFE_INTEGER : curSig.getRow();
 
                 const rowsPerMeasureThisSegment = curSig.getNoteRowsPerMeasure();
-                debugger;
+                // Usage of this variable fixes a bug from StepMania: https://github.com/stepmania/stepmania/issues/1080
+                const rowsPerBeatThisSegment = curSig.getNoteRowsPerBeat();
+
                 if (noteRow >= curSig.getRow()) {
                     // noteRow lands in this segment
                     const numRowsThisSegment = noteRow - curSig.getRow();
@@ -346,7 +348,7 @@ export class TimingData {
                     const numMeasuresThisSegment = Math.trunc(numRowsThisSegment / rowsPerMeasureThisSegment);
                     measureIndexOut.value += numMeasuresThisSegment;
                     // These are all integers so we need to trunc for our callers benefit
-                    beatIndexOut.value = Math.trunc(numRowsThisSegment / rowsPerMeasureThisSegment);
+                    beatIndexOut.value = Math.trunc(numRowsThisSegment / rowsPerBeatThisSegment);
                     rowsRemainder.value = numRowsThisSegment % rowsPerMeasureThisSegment;
                     return;
                 } else {
@@ -561,7 +563,7 @@ export class TimingData {
         // -Kyz
         const maxTime = 16777216;
         let curBpmSegment = bpms[0];
-        let curWapSegment: TimingSegment | null = null;
+        const curWapSegment: TimingSegment | null = null;
         while (!finished) {
             // TODO: find event, for now just assume we find a BPM change once
             const eventRow: PassByRef<number> = { value: Number.MAX_SAFE_INTEGER };

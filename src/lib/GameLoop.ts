@@ -17,7 +17,7 @@ class GameLoop {
         GAMESTATE.update(deltaTime);
         RhythmAssist.playTicks();
 
-        //console.log(deltaTime);
+        // console.log(deltaTime);
         // let j = 0;
         // for (let i = 0; i < 1000000; i++) {
         //     j += 1;

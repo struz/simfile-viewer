@@ -46,7 +46,6 @@ export class GameSoundManager {
             // console.log(`beatNow=${beatNow}`);
             // console.log(`difference=${beatNow - this.beatLastCrossed}`);
 
-            // debugger; // Debugger here because we want to make sure that the beats are crossing properly
             for (let beat = this.beatLastCrossed + 1; beat <= beatNow; beat++) {
                 console.log('crossedbeat');
                 // Broadcast "CrossedBeat" message for all beats crossed since the last update
