@@ -1,12 +1,12 @@
 import NoteHelpers from './NoteTypes';
 import GAMESTATE, { gPlaying } from './GameState';
-import { FOREACH_NONEMPTY_ROW_ALL_TRACKS } from './NoteData';
+import { FOREACH_NONEMPTY_ROW_ALL_TRACKS_RANGE } from './NoteData';
 
 export class RhythmAssist {
     public static rowLastCrossed = -1;
 
     public static playTicks() {
-        const metronome = true;
+        const metronome = false;
         const clap = true;
 
         // TODO: make this player position rather than overall song position
@@ -19,6 +19,12 @@ export class RhythmAssist {
         // positionSeconds += SOUNDMAN->GetPlayLatency() + (float)CommonMetrics::TICK_EARLY_SECONDS + 0.250f;
         const timing = gPlaying;
         if (timing === null) { return; }
+
+        const song = GAMESTATE.curSong;
+        if (song === undefined) { return; }
+        // TODO: don't just use getSteps(0), use an actual value
+        const nd = song.getSteps(0).getNoteData();
+
         // const timing = GAMESTATE.curSteps[0].timingData;  // TODO: use player number if ever applicable
         const songBeat = timing.getBeatFromElapsedTimeNoOffset(positionSeconds);
         const songRow = Math.max(0, NoteHelpers.beatToNoteRowNotRounded(songBeat));
@@ -32,6 +38,22 @@ export class RhythmAssist {
             let clapRow = -1;
             // FOREACH_NONEMPTY_ROW_ALL_TRACKS_RANGE
             // IMPORTANT:
+            // for each index crossed since the last update
+            // TODO: reverse arguments to this function so it looks nicer when chaining in
+            const row = {value: 0};
+            FOREACH_NONEMPTY_ROW_ALL_TRACKS_RANGE(nd, row, this.rowLastCrossed + 1, songRow + 1, (r) => {
+                if (nd.isThereATapOrHoldHeadAtRow(r.value)) {
+                    clapRow = r.value;
+                }
+            });
+            if (clapRow !== -1 && timing.isJudgableAtRow(clapRow)) {
+                const tickBeat = NoteHelpers.noteRowToBeat(clapRow);
+                const tickSecond = timing.getElapsedTimeFromBeatNoOffset(tickBeat);
+                const secondsUntil = tickSecond - position.musicSeconds;
+                // TODO: if we implement music rate, /= secondsUntil by the music rate
+                // TODO: when playing the sound use the magic formulae to play in time
+                console.log(`clap @ beat=${tickBeat}`);
+            }
         }
 
         if (metronome && this.rowLastCrossed !== -1) {

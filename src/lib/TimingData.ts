@@ -1,14 +1,35 @@
 // tslint:disable: max-classes-per-file
 import { TimingSegment, TimingSegmentType, SegmentEffectType,
-     TimeSignatureSegment, BPMSegment, TickcountSegment } from './TimingSegments';
-import { NotImplementedError } from './Error';
-import GAMESTATE from './GameState';
-import { DEBUG_ASSERT, ASSERT } from './Debug';
+    TimeSignatureSegment, BPMSegment, TickcountSegment,
+    WarpSegment, StopSegment, DelaySegment } from './TimingSegments';
+import { ASSERT } from './Debug';
 import Helpers, { PassByRef } from './GameConstantsAndTypes';
 import NoteHelpers from './NoteTypes';
-import { setFlagsFromString } from 'v8';
 
 const INVALID_INDEX: number = -1;
+
+/* DummySegments: since our model relies on being able to get a segment at will,
+ * whether one exists or not, we have a bunch of dummies to return if there is
+ * no segment. It's kind of kludgy, but when we have functions making
+ * indiscriminate calls to get segments at arbitrary rows, I think it's the
+ * best solution we've got for now.
+ *
+ * Note that types whose SegmentEffectAreas are "Indefinite" are NULL here,
+ * because they should never need to be used; we always have at least one such
+ * segment in the TimingData, and if not, we'll crash anyway. -- vyhd */
+const DummySegments: Array<TimingSegment | null> = [
+    null, // BPMSegment
+    new StopSegment(),
+    new DelaySegment(),
+    null, // TimeSignatureSegment
+    new WarpSegment(),
+    null, // LabelSegment
+    null, // TickcountSegment
+    null, // ComboSegment
+    null, // SpeedSegment
+    null, // ScrollSegment
+    null, // Haven't implemented FakeSegment yet //new FakeSegment(),
+];
 
 enum Found {
     WARP,
@@ -178,6 +199,96 @@ export class TimingData {
         }
         return true;
     }
+
+    /**
+     * Retrieve the TimingSegment at the specified row.
+     * @param iNoteRow the row that has a TimingSegment.
+     * @param tst the TimingSegmentType requested.
+     * @return the segment in question.
+     */
+    public getSegmentAtRow(noteRow: number, tst: TimingSegmentType) {
+        const segments = this.getTimingSegments(tst);
+
+        if (segments.length === 0) {
+            const retSegment = DummySegments[tst];
+            if (retSegment === null) { throw new Error('FATAL: retSegment should never be null'); }
+            return retSegment;
+        }
+
+        const index = this.getSegmentIndexAtRow(tst, noteRow);
+        const seg = segments[index];
+
+        switch (seg.getEffectType()) {
+            case SegmentEffectType.Indefinite:
+                // this segment is in effect at this row
+                return seg;
+            default:
+                // if the returned segment isn't exactly on this row,
+                // we don't want it, return a dummy instead
+                if (seg.getRow() === noteRow) {
+                    return seg;
+                }
+                const retSegment = DummySegments[tst];
+                if (retSegment === null) { throw new Error('FATAL: retSegment should never be null'); }
+                return retSegment;
+        }
+    }
+
+    /* The following functions were all preprocessor defined so this is a giant block
+       of code compared to what was in the C++. Unfortunate. Maybe we can clean this up
+       one day -Struz */
+    public getStopSegmentAtRow(noteRow: number) {
+        const t = this.getSegmentAtRow(noteRow, TimingSegmentType.STOP);
+        return (t as StopSegment);
+    }
+    public getDelaySegmentAtRow(noteRow: number) {
+        const t = this.getSegmentAtRow(noteRow, TimingSegmentType.DELAY);
+        return (t as DelaySegment);
+    }
+
+    /* convenience aliases (Set functions are deprecated) */
+    public getStopAtRow(noteRow: number) { return this.getStopSegmentAtRow(noteRow).getPause(); }
+    public getDelayAtRow(noteRow: number) { return this.getDelaySegmentAtRow(noteRow).getPause(); }
+
+    public isWarpAtRow(noteRow: number) {
+        const warps = this.getTimingSegments(TimingSegmentType.WARP);
+        if (warps.length === 0) { return false; }
+
+        const i = this.getSegmentIndexAtRow(TimingSegmentType.WARP, noteRow);
+        if (i === -1) { return false; }
+
+        const s = warps[i] as WarpSegment;
+        const beatRow = NoteHelpers.noteRowToBeat(noteRow);
+        if (s.getBeat() <= beatRow && beatRow < (s.getBeat() + s.getLength())) {
+            // Allow stops inside warps to allow things like stop, warp, stop, warp, stop, and so on.
+            if (this.getTimingSegments(TimingSegmentType.STOP).length === 0 &&
+                this.getTimingSegments(TimingSegmentType.DELAY).length === 0) {
+                    return true;
+                }
+            if (this.getStopAtRow(noteRow) !== 0 || this.getDelayAtRow(noteRow) !== 0) {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+    public isWarpAtBeat(beat: number) { return this.isWarpAtRow(NoteHelpers.beatToNoteRow(beat)); }
+
+    public isFakeAtRow(noteRow: number) {
+        // We don't support fakes yet -Struz
+        return false;
+        // const fakes = this.getTimingSegments(TimingSegmentType.FAKE);
+        // if (fakes.length === 0) { return false; }
+
+        // const i = this.getSegmentIndexAtRow(TimingSegmentType.FAKE, noteRow);
+        // if (i === -1) { return false; }
+
+        // const s = fakes[i] as FakeSegment;
+    }
+    public isFakeAtBeat(beat: number) { return this.isFakeAtRow(NoteHelpers.beatToNoteRow(beat)); }
+
+    public isJudgableAtRow(row: number) { return !this.isWarpAtRow(row) && !this.isFakeAtRow(row); }
+    public isJudgableAtBeat(beat: number) { return this.isJudgableAtRow(NoteHelpers.beatToNoteRow(beat)); }
 
     public adjustOffset(amount: number) {
         this.setOffset(this.beat0OffsetInSecs + amount);

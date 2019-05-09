@@ -238,8 +238,8 @@ class TrackMapIterator implements IterableIterator<[number, TapNote]> {
 // Helper functions that were #defined in C++. Translated with the same format for clarity.
 /** Act on each non empty row in the specific track. */
 export function FOREACH_NONEMPTY_ROW_IN_TRACK(
-    fn: (row: PassByRef<number>) => void,
-    nd: NoteData, track: number, row: PassByRef<number>) {
+    nd: NoteData, track: number, row: PassByRef<number>,
+    fn: (row: PassByRef<number>) => void) {
         // Takes row in so that it can pass it back out again if necessary
         for (row.value = -1; nd.getNextTapNoteRowForTrack(track, row); row.value++) {
             fn(row);
@@ -250,12 +250,21 @@ export function FOREACH_NONEMPTY_ROW_IN_TRACK(
 /** Act on each non empty row in the specified track within the specified range, going in reverse order. */
 /** Act on each non empty row for all of the tracks. */
 export function FOREACH_NONEMPTY_ROW_ALL_TRACKS(
-    fn: (row: PassByRef<number>) => void, nd: NoteData, row: PassByRef<number>) {
+    nd: NoteData, row: PassByRef<number>, fn: (row: PassByRef<number>) => void) {
         for (row.value = -1; nd.getNextTapNoteRowForAllTracks(row); row.value++) {
             fn(row);
         }
     }
 /** Act on each non empty row for all of the tracks within the specified range. */
+// I'm not sure why but this loop is 1-indexed while the array is 0-indexed, so it translates between.
+// TODO: make it all 0 indexed since the users add 1 to their values just to get them subtracted again here.
+export function FOREACH_NONEMPTY_ROW_ALL_TRACKS_RANGE(
+    nd: NoteData, row: PassByRef<number>, start: number,
+    last: number, fn: (row: PassByRef<number>) => void) {
+        for (row.value = start - 1; nd.getNextTapNoteRowForAllTracks(row) && row.value < last;) {
+            fn(row);
+        }
+    }
 
 /** Holds data about the notes that the player is supposed to hit. */
 export class NoteData {
@@ -478,6 +487,44 @@ export class NoteData {
         }
 
         return false;
+    }
+
+    public isThereATapAtRow(row: number) {
+        return this.getFirstTrackWithTap(row) !== -1;
+    }
+
+    public isThereATapOrHoldHeadAtRow(row: number) {
+        return this.getFirstTrackWithTapOrHoldHead(row) !== -1;
+    }
+
+    /**
+     * In the given row return the first track with a tap type.
+     * Returns -1 if no track has a tap type note.
+     */
+    public getFirstTrackWithTap(row: number) {
+        for (let t = 0; t < this.getNumTracks(); t++) {
+            const tn = this.getTapNote(t, row);
+            if (tn.type === TapNoteType.Tap || tn.type === TapNoteType.Lift) {
+                return t;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * In the given row return the first track with a tap or hold-head type.
+     * Returns -1 if no track has a tap or hold-head type.
+     */
+    public getFirstTrackWithTapOrHoldHead(row: number) {
+        for (let t = 0; t < this.getNumTracks(); t++) {
+            const tn = this.getTapNote(t, row);
+            if (tn.type === TapNoteType.Tap ||
+                tn.type === TapNoteType.Lift ||
+                tn.type === TapNoteType.HoldHead) {
+                return t;
+            }
+        }
+        return -1;
     }
     // TODO: finish me off sometime from NoteData.h
 }

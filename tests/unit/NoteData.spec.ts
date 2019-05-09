@@ -1,7 +1,10 @@
 // tslint:disable: max-line-length
 
 import { expect } from 'chai';
-import NoteData, { FOREACH_NONEMPTY_ROW_IN_TRACK, FOREACH_NONEMPTY_ROW_ALL_TRACKS } from '@/lib/NoteData';
+import NoteData, {
+    FOREACH_NONEMPTY_ROW_IN_TRACK,
+    FOREACH_NONEMPTY_ROW_ALL_TRACKS,
+    FOREACH_NONEMPTY_ROW_ALL_TRACKS_RANGE } from '@/lib/NoteData';
 import { TapNote, TapNoteType } from '@/lib/NoteTypes';
 import { PassByRef } from '@/lib/GameConstantsAndTypes';
 
@@ -70,7 +73,7 @@ describe('NoteData', () => {
         // Tests FOREACH_NONEMPTY_ROW_IN_TRACK
         const outerRow = {value: 0};
         i = 0;
-        FOREACH_NONEMPTY_ROW_IN_TRACK(testFn, nd, track, outerRow);
+        FOREACH_NONEMPTY_ROW_IN_TRACK(nd, track, outerRow, testFn);
         expect(outerRow.value).to.not.equal(0);
     });
 
@@ -85,10 +88,11 @@ describe('NoteData', () => {
                 if (tn.type !== TapNoteType.Empty) {
                     // We found a non-empty tap note! Check it matches the expected value.
                     const expected = expectedTracks[track].find((value) => value[0] === row.value);
-                    if (expected !== undefined) {
-                        expect(expected[0]).to.equal(row.value);
-                        expect(expected[1]).to.equal(tn);
-                    }
+                    expect(expected).to.not.equal(undefined);
+                    // TODO: find a more elegant way to get typescript to recognise the assertion above
+                    const typedExpected = expected as [number, TapNote];
+                    expect(typedExpected[0]).to.equal(row.value);
+                    expect(typedExpected[1]).to.equal(tn);
                 }
             }
         };
@@ -101,8 +105,40 @@ describe('NoteData', () => {
 
         // Tests FOREACH_NONEMPTY_ROW_ALL_TRACKS
         const outerRow = {value: 0};
-        FOREACH_NONEMPTY_ROW_ALL_TRACKS(testFn, nd, outerRow);
+        FOREACH_NONEMPTY_ROW_ALL_TRACKS(nd, outerRow, testFn);
         expect(outerRow.value).to.not.equal(0);
+    });
+
+    it('loops through a range of rows over multiple tracks of note data', () => {
+        interface FindResult {
+            track: number;
+            row: number;
+            tn: TapNote;
+        }
+        const foundNotes: FindResult[] = [];
+        // TODO: Duplicated from earlier test. Factor out into suite.
+        const testFn = (row: PassByRef<number>) => {
+            for (let track = 0; track < nd.getNumTracks(); track++) {
+                const tn = nd.getTapNote(track, row.value);
+                if (tn.type !== TapNoteType.Empty) {
+                    foundNotes.push({track, row: row.value, tn});
+                    // We found a non-empty tap note! Check it matches the expected value.
+                    const expected = expectedTracks[track].find((value) => value[0] === row.value);
+                    expect(expected).to.not.equal(undefined);
+                    // TODO: find a more elegant way to get typescript to recognise the assertion above
+                    const typedExpected = expected as [number, TapNote];
+                    expect(typedExpected[0]).to.equal(row.value);
+                    expect(typedExpected[1]).to.equal(tn);
+                }
+            }
+        };
+
+        const outerRow = {value: 0};
+        // 1 indexed, so start at 98, but the internal functions find the first line >98
+        const rowRangeStart = 99;
+        const rowRangeLast = 851;  // 1 indexed, so last parsed line is 850
+        FOREACH_NONEMPTY_ROW_ALL_TRACKS_RANGE(nd, outerRow, rowRangeStart, rowRangeLast, testFn);
+        expect(foundNotes.length).to.equal(7);
     });
 
     it('allows .set() on existing rows while iterating', () => {

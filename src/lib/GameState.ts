@@ -78,7 +78,7 @@ export class GameState {
 
     /** All the logic involved with loading a new song. */
     public loadNextSong(newSong: Song | undefined) {
-        this.resetMusicStatistics()
+        this.resetMusicStatistics();
         if (newSong === undefined) {
             return;
         }
