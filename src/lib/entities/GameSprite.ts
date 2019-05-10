@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import RESOURCEMAN, { GameSpriteInfo } from '../ResourceManager';
+import SCREENMAN from '../ScreenManager';
 
 // Abstract class to parent all sprite subsets
 abstract class GameSprite {
@@ -28,6 +29,10 @@ abstract class GameSprite {
     public setPos(x: number, y: number) {
         this.sprite.x = x;
         this.sprite.y = y;
+        return this;
+    }
+    public addToStage() {
+        SCREENMAN.getPixiApp().stage.addChild(this.sprite);
         return this;
     }
 }

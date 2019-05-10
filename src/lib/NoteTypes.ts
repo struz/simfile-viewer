@@ -206,3 +206,13 @@ export class TapNotes {
     public static newAdditionTap() { return this.ADDITION_TAP.copy(); }
     public static newAdditionMine() { return this.ADDITION_MINE.copy(); }
 }
+
+export const TAPNOTE_WIDTH_PX = 64;
+export const TAPNOTE_HEIGHT_PX = 64;
+
+export enum TapNoteDirection {
+    DOWN,
+    LEFT,
+    UP,
+    RIGHT,
+}

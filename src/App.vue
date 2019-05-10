@@ -91,8 +91,6 @@ export default {
   },
   methods: {
     play: () => {
-      SCREENMAN.setBgColor(Math.trunc(Math.random() * 0xffffff));
-      return;
       if (loadedMusic && loadedSong && !playing) {
         playing = true;
         bigSkyMusic.play();

@@ -1,17 +1,8 @@
-import { NoteType } from '../NoteTypes';
+import { NoteType, TapNoteDirection } from '../NoteTypes';
 import RESOURCEMAN, { GameSpriteInfo, DOWN_TAP_NOTE_SHEET_NAME } from '../ResourceManager';
 import GameSprite from './GameSprite';
 
 const NOTESKIN = 'USWCelETT';
-export const TAPNOTE_WIDTH_PX = 64;
-export const TAPNOTE_HEIGHT_PX = 64;
-
-export enum TapNoteDirection {
-    DOWN,
-    LEFT,
-    UP,
-    RIGHT,
-}
 
 class TapNoteSprite extends GameSprite {
     private direction: TapNoteDirection;
@@ -24,7 +15,7 @@ class TapNoteSprite extends GameSprite {
      */
     constructor(direction: TapNoteDirection, noteType: NoteType) {
         GameSprite.checkDependencies();
-        super(RESOURCEMAN.getSpriteInfo(DOWN_TAP_NOTE_SHEET_NAME));
+        super(RESOURCEMAN.getSpriteInfo(DOWN_TAP_NOTE_SHEET_NAME), noteType);
 
         this.direction = direction;
         this.noteType = noteType;

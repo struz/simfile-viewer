@@ -32,14 +32,14 @@ class Screen extends Vue {
     const width = renderCanvas.offsetWidth;
     const height = renderCanvas.offsetHeight;
 
-    // Add us to the ScreenManager. If we already existed throw an error as this
-    // should not happen.
-    if (SCREENMAN.isInit()) { throw new Error('Tried to remount while SCREENMAN already initialised'); }
-    SCREENMAN.initPixi({
-      renderCanvas,
-      width,
-      height,
-    });
+    // Add us to the ScreenManager if we haven't been already.
+    if (!SCREENMAN.isInit()) {
+      SCREENMAN.initPixi({
+        renderCanvas,
+        width,
+        height,
+      });
+    }
   }
 }
 export default Screen;
