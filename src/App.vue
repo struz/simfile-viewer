@@ -60,7 +60,10 @@ declare global {
 import MsdFile from './lib/MsdFile';
 import NoteLoaderSM from './lib/NoteLoaderSM';
 import fs from 'fs';
-import GAMESTATE from './lib/GameState';
+import GAMESTATE, {GameState} from './lib/GameState';
+import GameSoundManager from './lib/GameSoundManager';
+
+let loadedSm = false;
 
 let bigSkySmFile = '';
 const rawFile = new XMLHttpRequest();
@@ -72,8 +75,9 @@ rawFile.onreadystatechange = () => {
 
             const msdFile = new MsdFile(bigSkySmFile);
             const song = NoteLoaderSM.loadFromSimfile(msdFile);
+            loadedSm = true;
 
-            GAMESTATE.setCurSong(song);
+            GAMESTATE.loadNextSong(song);
             window.GAMESTATE = GAMESTATE;
             window.song = song;
         }
@@ -81,6 +85,11 @@ rawFile.onreadystatechange = () => {
 };
 rawFile.open('GET', './BigSky.sm', true);
 rawFile.send(null);
+
+if (GameSoundManager.bigSkyLoaded) {
+    GameSoundManager.bigSky.play();
+    GameState.gPlaying = true;
+}
 
 
 export default {
@@ -92,6 +101,17 @@ export default {
     return {
       //
     };
+  },
+  methods: {
+    play: () => {
+      alert('hey');
+      if (loadedSm) {
+        if (GameSoundManager.bigSkyLoaded) {
+          GameSoundManager.bigSky.play();
+          GameState.gPlaying = true;
+        }
+      }
+    },
   },
 };
 </script>

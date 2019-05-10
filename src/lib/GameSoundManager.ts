@@ -1,15 +1,24 @@
-import GAMESTATE, { gPlaying } from './GameState';
+import GAMESTATE, { GameState } from './GameState';
 import NoteHelpers, { ROWS_PER_BEAT } from './NoteTypes';
 import GameLoop from './GameLoop';
 
 import { Howl } from 'howler';
 import bigSkyOgg from '../assets/music/bigsky.ogg';
 
-// GOOD SONG: Again and again
 export class GameSoundManager {
     public static bigSky = new Howl({
         src: [bigSkyOgg],
+        onload: () => {
+            GameSoundManager.bigSkyLoaded = true;
+            // If BigSky is already loaded start playing
+            if (GAMESTATE.curSong !== undefined) {
+                GameSoundManager.bigSky.play();
+                GameState.gPlaying = true;
+                GAMESTATE.resetMusicStatistics();
+            }
+        },
     });
+    public static bigSkyLoaded = false;
     // Really shitty syncing
     public static isPlayingBigSky = false;
 
@@ -33,14 +42,9 @@ export class GameSoundManager {
     // The idea here is to fake the sounds playing for now and just move the song position along
     public update(deltaTime: number) {
         const playbackRate = 1.0;
-        if (gPlaying !== null) {
+        if (GameState.gTimingData !== null) {
             GAMESTATE.updateSongPosition(GAMESTATE.position.musicSeconds + deltaTime
-                    * playbackRate, gPlaying);
-
-            if (!GameSoundManager.isPlayingBigSky) {
-                GameSoundManager.bigSky.play();
-                GameSoundManager.isPlayingBigSky = true;
-            }
+                    * playbackRate, GameState.gTimingData);
         }
         // NOTE: the above is fudging, when actually playing music we will need to sync
         // by getting the seconds from the song.

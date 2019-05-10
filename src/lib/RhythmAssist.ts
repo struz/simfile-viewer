@@ -1,5 +1,5 @@
 import NoteHelpers from './NoteTypes';
-import GAMESTATE, { gPlaying } from './GameState';
+import GAMESTATE, { GameState } from './GameState';
 import { FOREACH_NONEMPTY_ROW_ALL_TRACKS_RANGE } from './NoteData';
 import { Howl } from 'howler';
 import clapOgg from '../assets/sounds/assist_clap.ogg';
@@ -22,7 +22,7 @@ export class RhythmAssist {
         // This next line is for playing sounds early so they come out on time.
         // Worry about that later. -Struz
         // positionSeconds += SOUNDMAN->GetPlayLatency() + (float)CommonMetrics::TICK_EARLY_SECONDS + 0.250f;
-        const timing = gPlaying;
+        const timing = GameState.gTimingData;
         if (timing === null) { return; }
 
         const song = GAMESTATE.curSong;
@@ -37,8 +37,6 @@ export class RhythmAssist {
             this.rowLastCrossed = songRow;
         }
 
-        // IMPORTANT: also do clap!!
-        // IsJudgeableOnRow
         if (clap) {
             let clapRow = -1;
             // FOREACH_NONEMPTY_ROW_ALL_TRACKS_RANGE

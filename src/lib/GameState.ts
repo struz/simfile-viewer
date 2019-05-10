@@ -7,10 +7,15 @@ import { GameTimer, gZeroTimer } from './GameTimer';
 import { Steps } from './Steps';
 import Song from './Song';
 import { NotImplementedError } from './Error';
+import GameSoundManager from './GameSoundManager';
 
 
 /** Holds all the state about the game. A singleton. */
 export class GameState {
+    // Temp global state
+    public static gTimingData: TimingData | null = null;
+    public static gPlaying = false;
+
     // Global state from Actors.h, might need moving to another place
     public static currentBgmTime = 0;
     public static currentBgmBeat = 0;
@@ -100,9 +105,9 @@ export class GameState {
         // TODO: broadcast song has changed.
         if (this.curSong !== undefined) {
             // TODO: request lookup data for the new song
-            gPlaying = this.curSong.songTiming;
+            GameState.gTimingData = this.curSong.songTiming;
         } else {
-            gPlaying = null;
+            GameState.gTimingData = null;
         }
     }
 
@@ -176,7 +181,4 @@ export class GameState {
     }
 }
 const GAMESTATE = GameState.getInstance();
-
-// TODO: fixme to be a proper class
-export let gPlaying: TimingData | null = null;
 export default GAMESTATE;
