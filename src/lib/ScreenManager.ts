@@ -46,7 +46,7 @@ export class ScreenManager {
         // Tell the resource manager it can load things now
         RESOURCEMAN.loadSprites();
         // Start the tick loop for animations and other such things
-        this.pixiApp.ticker.add((delta) => {});
+        this.pixiApp.ticker.start();
     }
 
     public isInit() { return this.pixiApp !== null; }
@@ -62,3 +62,6 @@ export class ScreenManager {
 }
 const SCREENMAN = ScreenManager.getInstance();
 export default SCREENMAN;
+
+// TODO: ScreenManager should just have an update function which controls everything based on external representation.
+// Its job is to expire arrow visual representations when no longer necessary, etc.

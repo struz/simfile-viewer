@@ -8,42 +8,27 @@
 
 <script lang="ts">
 import Vue from 'vue';
-import { CombinedVueInstance } from 'vue/types/vue';
+import { Component } from 'vue-property-decorator';
 
 import SCREENMAN, { ScreenManager } from '@/lib/ScreenManager';
 
-interface ScreenManagerWrapper {
-  ScreenManager: ScreenManager | null; // The application object
-}
+@Component
+class Screen extends Vue {
+  public $refs!: {
+    renderCanvas: HTMLCanvasElement,
+  };
 
-interface ScreenComponent {
-  ScreenManagerWrapper: ScreenManagerWrapper;
-  EventBus: Vue;
-}
+  public data() {
+    return {};
+  }
+  public provide() {
+    return {};
+  }
 
-export default {
-  data(): ScreenComponent {
-    return {
-      // These need to be contained in an object because providers are not reactive.
-      ScreenManagerWrapper: {
-        // Expose PIXI and the created app to all descendants.
-        ScreenManager: null,
-      },
-      // Expose the event bus to all descendants so they can listen for the app-ready event.
-      EventBus: new Vue(),
-    };
-  },
-  // Allows descendants to inject everything.
-  provide(): ScreenComponent {
-    return {
-      ScreenManagerWrapper: this.ScreenManagerWrapper,
-      EventBus: this.EventBus,
-    };
-  },
-
-  mounted() {
+  public mounted() {
+    console.log('mounted');
     // Determine the width and height of the renderer wrapper element.
-    const renderCanvas = this.$refs.renderCanvas as HTMLCanvasElement;
+    const renderCanvas = this.$refs.renderCanvas;
     const width = renderCanvas.offsetWidth;
     const height = renderCanvas.offsetHeight;
 
@@ -55,10 +40,9 @@ export default {
       width,
       height,
     });
-
-    this.EventBus.$emit('ready');
-  },
-};
+  }
+}
+export default Screen;
 </script>
 
 <style scoped>

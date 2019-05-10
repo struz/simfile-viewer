@@ -3,7 +3,7 @@ import { SOUNDMAN } from './GameSoundManager';
 import GAMESTATE from './GameState';
 import RhythmAssist from './RhythmAssist';
 import SCREENMAN from './ScreenManager';
-import TapNoteSprite, { TapNoteDirection } from './TapNoteSprite';
+import TapNoteSprite, { TapNoteDirection } from './visual/TapNoteSprite';
 import { NoteType } from './NoteTypes';
 
 export const gGameplayTimer = new GameTimer();
