@@ -1,5 +1,6 @@
-import TimingData, { DetailedTimeInfo } from './TimingData';
+import TimingData, { GetBeatArgs } from './TimingData';
 import { GameTimer } from './GameTimer';
+import { ASSERT } from './Debug';
 
 // TODO: support delays and offsets?
 const gVisualDelaySeconds = 0;
@@ -10,15 +11,19 @@ const gVisualDelaySeconds = 0;
 export class SongPosition {
     public musicSeconds = 0;
     public songBeat = 0;
-    public songBeatNoteOffset = 0;
+    public songBeatNoOffset = 0;
     public curBps = 0;
     /** A flag to determine if we're in the middle of a freeze/stop. */
     public freeze = false;
     /** A flag to determine if we're in the middle of a delay (Pump style stop). */
     public delay = false;
-    public lastBeatUpdate = new GameTimer();
-    public musicSecondsVisible = 0;
-    public songBeatVisible = 0;
+    /** The row used to start a warp. */
+    public warpBeginRow = 0;
+    /** The beat to warp to afterwards. */
+    public warpDestination = 0;
+    public lastBeatUpdate = new GameTimer(); // time of last this.songBeat etc. update
+    public musicSecondsVisible = -1;
+    public songBeatVisible = -1;
 
     public reset() {
         this.musicSecondsVisible = 0;
@@ -27,10 +32,12 @@ export class SongPosition {
         this.musicSeconds = 0;
         // todo: move me to FOREACH_EnabledPlayer( p ) after [NUM_PLAYERS]ing
         this.songBeat = 0;
-        this.songBeatNoteOffset = 0;
+        this.songBeatNoOffset = 0;
         this.curBps = 0;
         this.freeze = false;
         this.delay = false;
+        this.warpBeginRow = -1; // Set to -1 because some song may want to warp to row 0. -aj
+        this.warpDestination = -1; // Set when a warp is encountered. also see above. -aj
     }
 
     public updateSongPosition(positionSeconds: number, timing: TimingData, timestamp: GameTimer) {
@@ -40,21 +47,25 @@ export class SongPosition {
             this.lastBeatUpdate.touch();
         }
 
-        const beatInfo: DetailedTimeInfo = new DetailedTimeInfo();
-        beatInfo.second = positionSeconds;
-        timing.getDetailedInfoForSecond(beatInfo);
+        const beatInfo = new GetBeatArgs();
+        beatInfo.elapsedTime = positionSeconds;
+        timing.getBeatAndBpsFromElapsedTime(beatInfo);
         this.songBeat = beatInfo.beat;
         this.curBps = beatInfo.bpsOut;
         this.freeze = beatInfo.freezeOut;
         this.delay = beatInfo.delayOut;
+        this.warpBeginRow = beatInfo.warpBeginOut;
+        this.warpDestination = beatInfo.warpDestOut;
 
-        // ASSERT_M ( this.songBeat > -2000 )
+        ASSERT(this.songBeat > -2000, `Song beat ${this.songBeat} at ${positionSeconds} is less than -2000`);
 
         this.musicSeconds = positionSeconds;
-        this.songBeatNoteOffset = timing.getBeatFromElapsedTimeNoOffset(this.musicSecondsVisible);
+        // ignore light beat - we don't support lights -Struz
+        this.songBeatNoOffset = timing.getBeatFromElapsedTimeNoOffset(this.musicSecondsVisible);
 
-        this.musicSecondsVisible = positionSeconds - gVisualDelaySeconds;
-        this.songBeatVisible = timing.getBeatFromElapsedTime(this.musicSecondsVisible);
+        // we don't support visual delay yet, clone the values -Struz
+        this.musicSecondsVisible = this.musicSeconds;
+        this.songBeatVisible = this.songBeat;
     }
 }
 export default SongPosition;

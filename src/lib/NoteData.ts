@@ -4,7 +4,7 @@ import { TapNote, TapNoteSubType, TapNotes, MAX_NOTE_ROW } from './NoteTypes';
 import TimingData from './TimingData';
 import { TapNoteType } from './NoteTypes';
 import { NotImplementedError } from './Error';
-import { ASSERT } from './Debug';
+import { ASSERT, DEBUG_ASSERT } from './Debug';
 import { PassByRef } from './GameConstantsAndTypes';
 
 // NoteData is organized by:

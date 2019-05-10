@@ -6,6 +6,7 @@ import Helpers from './GameConstantsAndTypes';
 import { GameTimer, gZeroTimer } from './GameTimer';
 import { Steps } from './Steps';
 import Song from './Song';
+import { NotImplementedError } from './Error';
 
 
 /** Holds all the state about the game. A singleton. */
@@ -126,10 +127,7 @@ export class GameState {
     }
 
     public getSongPercent(beat: number) {
-        // 0 = first step, 1 = last step
-        if (this.curSong === undefined) { return 0; }
-        const curTime = this.curSong.songTiming.getElapsedTimeFromBeat(beat);
-        return (curTime - this.curSong.firstSecond) / this.curSong.lastSecond;
+        throw new NotImplementedError();
     }
 
     public setBgmTime(time: number, beat: number, timeNoOffset: number, beatNoOffset: number) {
@@ -169,12 +167,12 @@ export class GameState {
             this.playerState[pn].position.updateSongPosition(positionSeconds,
                 this.curSteps[pn].timingData, timestamp);
             this.setPlayerBgmBeat(pn, this.playerState[pn].position.songBeatVisible,
-                this.playerState[pn].position.songBeatNoteOffset);
+                this.playerState[pn].position.songBeatNoOffset);
         }
         this.setBgmTime(GameState.getInstance().position.musicSecondsVisible,
             GameState.getInstance().position.songBeatVisible,
             positionSeconds,
-            GameState.getInstance().position.songBeatNoteOffset);
+            GameState.getInstance().position.songBeatNoOffset);
     }
 }
 const GAMESTATE = GameState.getInstance();
