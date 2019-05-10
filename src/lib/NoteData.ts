@@ -4,7 +4,7 @@ import { TapNote, TapNoteSubType, TapNotes, MAX_NOTE_ROW } from './NoteTypes';
 import TimingData from './TimingData';
 import { TapNoteType } from './NoteTypes';
 import { NotImplementedError } from './Error';
-import { DEBUG_ASSERT } from './Debug';
+import { ASSERT } from './Debug';
 import { PassByRef } from './GameConstantsAndTypes';
 
 // NoteData is organized by:
@@ -361,7 +361,7 @@ export class NoteData {
             const newRowThisTrack = {value: rowInAndOut.value};
             if (this.getNextTapNoteRowForTrack(t, newRowThisTrack)) {
                 anyHaveNextNote = true;
-                DEBUG_ASSERT(newRowThisTrack.value < MAX_NOTE_ROW);
+                ASSERT(newRowThisTrack.value < MAX_NOTE_ROW, 'Row should never exceed MAX_NOTE_ROW');
                 closestNextRow = Math.min(closestNextRow, newRowThisTrack.value);
             }
         }

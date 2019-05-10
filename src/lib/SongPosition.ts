@@ -17,7 +17,7 @@ export class SongPosition {
     /** A flag to determine if we're in the middle of a delay (Pump style stop). */
     public delay = false;
     public lastBeatUpdate = new GameTimer();
-    public musicSecondsVisible = 0; // Disabled because we don't support delays
+    public musicSecondsVisible = 0;
     public songBeatVisible = 0;
 
     public reset() {

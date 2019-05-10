@@ -2,8 +2,17 @@ import GAMESTATE, { gPlaying } from './GameState';
 import NoteHelpers, { ROWS_PER_BEAT } from './NoteTypes';
 import GameLoop from './GameLoop';
 
+import { Howl } from 'howler';
+import bigSkyOgg from '../assets/music/bigsky.ogg';
+
 // GOOD SONG: Again and again
 export class GameSoundManager {
+    public static bigSky = new Howl({
+        src: [bigSkyOgg],
+    });
+    // Really shitty syncing
+    public static isPlayingBigSky = false;
+
     // Singleton
     public static getInstance() {
         if (!GameSoundManager.instance) {
@@ -27,6 +36,11 @@ export class GameSoundManager {
         if (gPlaying !== null) {
             GAMESTATE.updateSongPosition(GAMESTATE.position.musicSeconds + deltaTime
                     * playbackRate, gPlaying);
+
+            if (!GameSoundManager.isPlayingBigSky) {
+                GameSoundManager.bigSky.play();
+                GameSoundManager.isPlayingBigSky = true;
+            }
         }
         // NOTE: the above is fudging, when actually playing music we will need to sync
         // by getting the seconds from the song.
@@ -51,7 +65,7 @@ export class GameSoundManager {
                 // Broadcast "CrossedBeat" message for all beats crossed since the last update
                 // Need some kind of message queue system but it's single threaded ...
 
-                // What the fuck do these messages actually do? Based on the code they never even
+                // What do these messages actually do? Based on the code they never even
                 // get sent UNLESS the game lags. Maybe thye're catchups? -Struz
             }
 

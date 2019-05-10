@@ -112,6 +112,7 @@ export class LineSegment {
 /** Holds data for translating beats<->seconds. */
 export class TimingData {
     // Utility functions
+    // -5.2-
     public static findLineSegment(sortedSegments: Map<number, LineSegment[]>, time: number) {
         ASSERT(sortedSegments.size > 0, 'findLineSegment called on empty sortedSegments');
 
@@ -422,7 +423,7 @@ export class TimingData {
 
         // Copy() the segment (which allocates a new segment), assign it
         // to the position of the old one, then delete the old pointer.
-        // TODO: probably not the best way to do this in js - Struz
+        // TODO: probably not the best way to do this in js -Struz
         const copy = Object.assign(Object.create(Object.getPrototypeOf(seg)), seg);
         if (onSameRow) {
             // TODO: check memory leaks
@@ -498,31 +499,11 @@ export class TimingData {
         return INVALID_INDEX;
     }
 
+    // -5.2- introduced all of this stuff about detailed seconds?
     public getDetailedInfoForSecond(args: DetailedTimeInfo): void {
         // C++ code adds the hasted music rate * the global offset buffer here
         // We don't care...yet - Struz
         this.getDetailedInfoForSecondNoOffset(args);
-    }
-
-    public getBeatFromElapsedTime(second: number): number {
-        if (this.empty()) { return 0; }
-        const globOff = 0; // We don't support offset yet -Struz
-        if (this.lineSegments.length > 0) {
-            return this.getLineBeatFromSecond(second + globOff);
-        } else {
-            const segment = { value: new LineSegment() };
-            this.prepareLineLookup(SearchMode.SECOND, second + globOff, segment);
-            if (segment.value.startSecond === segment.value.endSecond) {
-                return segment.value.endBeat;
-            }
-            return Helpers.scale(second, segment.value.startSecond, segment.value.endSecond,
-                segment.value.startBeat, segment.value.endBeat);
-        }
-    }
-
-    public getBeatFromElapsedTimeNoOffset(second: number): number {
-        // We don't support offset yet so this function does the same. Pass through. -Struz
-        return this.getBeatFromElapsedTime(second);
     }
 
     public getDetailedInfoForSecondNoOffset(args: DetailedTimeInfo) {
@@ -553,8 +534,28 @@ export class TimingData {
         }
     }
 
+    public getBeatFromElapsedTime(second: number): number {
+        if (this.empty()) { return 0; }
+        const globOff = 0; // We don't support offset yet -Struz
+        if (this.lineSegments.length > 0) {
+            return this.getLineBeatFromSecond(second + globOff);
+        } else {
+            const segment = { value: new LineSegment() };
+            this.prepareLineLookup(SearchMode.SECOND, second + globOff, segment);
+            if (segment.value.startSecond === segment.value.endSecond) {
+                return segment.value.endBeat;
+            }
+            return Helpers.scale(second, segment.value.startSecond, segment.value.endSecond,
+                segment.value.startBeat, segment.value.endBeat);
+        }
+    }
+
+    public getBeatFromElapsedTimeNoOffset(second: number): number {
+        // We don't support offset yet so this function does the same. Pass through. -Struz
+        return this.getBeatFromElapsedTime(second);
+    }
+
     public getElapsedTimeFromBeatNoOffset(beat: number) {
-        // IMPORTANT: we really need these lookups to work
         if (this.empty()) { return 0; }
         if (this.lineSegments.length > 0) {
             return this.getLineSecondFromBeat(beat);
