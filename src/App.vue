@@ -16,16 +16,17 @@
     </v-toolbar>
 
     <v-content>
-      <HelloWorld/>
+      <screen></screen>
       <v-btn v-on:click="play">Test</v-btn>
     </v-content>
   </v-app>
 </template>
 
 <script lang="ts">
-import HelloWorld from './components/HelloWorld.vue';
-import {Howl} from 'howler';
+import Screen from './components/Screen.vue';
+import { Howl } from 'howler';
 import GameLoop from './lib/GameLoop';
+import SCREENMAN from '@/lib/ScreenManager.ts';
 
 // Register our main loop as soon as the page loads
 (() => {
@@ -73,7 +74,7 @@ const bigSkyMusic = new Howl({
   },
   onloaderror: (_, msg) => {
     console.log(`error loading bigsky.ogg: ${msg}`);
-  }
+  },
 });
 
 let playing = false;
@@ -81,7 +82,7 @@ let playing = false;
 export default {
   name: 'App',
   components: {
-    HelloWorld,
+    Screen,
   },
   data() {
     return {
@@ -90,6 +91,8 @@ export default {
   },
   methods: {
     play: () => {
+      SCREENMAN.setBgColor(Math.trunc(Math.random() * 0xffffff));
+      return;
       if (loadedMusic && loadedSong && !playing) {
         playing = true;
         bigSkyMusic.play();
