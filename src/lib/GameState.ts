@@ -7,15 +7,10 @@ import { GameTimer, gZeroTimer } from './GameTimer';
 import { Steps } from './Steps';
 import Song from './Song';
 import { NotImplementedError } from './Error';
-import GameSoundManager from './GameSoundManager';
 
 
 /** Holds all the state about the game. A singleton. */
 export class GameState {
-    // Temp global state
-    public static gTimingData: TimingData | null = null;
-    public static gPlaying = false;
-
     // Global state from Actors.h, might need moving to another place
     public static currentBgmTime = 0;
     public static currentBgmBeat = 0;
@@ -38,9 +33,11 @@ export class GameState {
     }
     private static instance: GameState;
 
+    // The currently playing song, if any
     public curSong: Song | undefined;
+    // curSong.songTiming has the timing data we care about
 
-    // Stuff used in gameplay
+    // Stuff used in gameplay, they mean nothing if curSong is undefined
     public curSteps: Steps[]; // One index per player; A broadcast on change pointer in C++
     public position: SongPosition = new SongPosition();
 
@@ -91,6 +88,7 @@ export class GameState {
         }
 
         this.setCurSong(newSong);
+        // IMPORTANT: make the primitives and stuff?
         // Screen.setupSong()
         // Sets steps display
     }
@@ -105,9 +103,6 @@ export class GameState {
         // TODO: broadcast song has changed.
         if (this.curSong !== undefined) {
             // TODO: request lookup data for the new song
-            GameState.gTimingData = this.curSong.songTiming;
-        } else {
-            GameState.gTimingData = null;
         }
     }
 
@@ -163,6 +158,8 @@ export class GameState {
             this.lastPositionSeconds = positionSeconds;
         }
 
+        // If we were paused then positionSeconds will be the same as before, so the following
+        // updateSongPosition calls will be a no-op
         this.position.updateSongPosition(positionSeconds, timing, timestamp);
 
         // TODO: fixme to be a FOREACH_EnabledPlayer
@@ -174,7 +171,7 @@ export class GameState {
             this.setPlayerBgmBeat(pn, this.playerState[pn].position.songBeatVisible,
                 this.playerState[pn].position.songBeatNoOffset);
         }
-        this.setBgmTime(GameState.getInstance().position.musicSecondsVisible,
+        this.setBgmTime(GAMESTATE.position.musicSecondsVisible,
             GameState.getInstance().position.songBeatVisible,
             positionSeconds,
             GameState.getInstance().position.songBeatNoOffset);

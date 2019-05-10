@@ -1,27 +1,7 @@
 import GAMESTATE, { GameState } from './GameState';
 import NoteHelpers, { ROWS_PER_BEAT } from './NoteTypes';
-import GameLoop from './GameLoop';
-
-import { Howl } from 'howler';
-import bigSkyOgg from '../assets/music/bigsky.ogg';
 
 export class GameSoundManager {
-    public static bigSky = new Howl({
-        src: [bigSkyOgg],
-        onload: () => {
-            GameSoundManager.bigSkyLoaded = true;
-            // If BigSky is already loaded start playing
-            if (GAMESTATE.curSong !== undefined) {
-                GameSoundManager.bigSky.play();
-                GameState.gPlaying = true;
-                GAMESTATE.resetMusicStatistics();
-            }
-        },
-    });
-    public static bigSkyLoaded = false;
-    // Really shitty syncing
-    public static isPlayingBigSky = false;
-
     // Singleton
     public static getInstance() {
         if (!GameSoundManager.instance) {
@@ -42,17 +22,14 @@ export class GameSoundManager {
     // The idea here is to fake the sounds playing for now and just move the song position along
     public update(deltaTime: number) {
         const playbackRate = 1.0;
-        if (GameState.gTimingData !== null) {
+        // If we have some timing data then we can update the song position
+        // TODO: once we're past the end of the song probably stop doing this
+        if (GAMESTATE.curSong !== undefined) {
             GAMESTATE.updateSongPosition(GAMESTATE.position.musicSeconds + deltaTime
-                    * playbackRate, GameState.gTimingData);
+                    * playbackRate, GAMESTATE.curSong.songTiming);
         }
-        // NOTE: the above is fudging, when actually playing music we will need to sync
+        // NOTE: the above is fudging and hoping, when actually playing music we *may* need to sync
         // by getting the seconds from the song.
-
-        if (GameLoop.totalTime + deltaTime > GameLoop.lastSecondPassed + 10) {
-            GameLoop.lastSecondPassed = GameLoop.totalTime + deltaTime;
-            console.log(`musicSeconds=${GAMESTATE.position.musicSeconds}`);
-        }
 
         // Send crossed messages
         if (GAMESTATE.curSong !== undefined) {
@@ -61,23 +38,20 @@ export class GameSoundManager {
             rowNow = Math.max(0, rowNow);
 
             const beatNow = rowNow / ROWS_PER_BEAT;
-            // console.log(`beatNow=${beatNow}`);
-            // console.log(`difference=${beatNow - this.beatLastCrossed}`);
 
             for (let beat = this.beatLastCrossed + 1; beat <= beatNow; beat++) {
                 console.log('crossedbeat');
                 // Broadcast "CrossedBeat" message for all beats crossed since the last update
                 // Need some kind of message queue system but it's single threaded ...
 
-                // What do these messages actually do? Based on the code they never even
-                // get sent UNLESS the game lags. Maybe thye're catchups? -Struz
+                // This occurs when a lot of beats have been crossed between updates and allows
+                // us to do things like look for all the notes that must have passed.
+                // This occurs when we change tabs and change back, for example. -Struz
             }
 
-            // console.log(`beatLastCrossed=${this.beatLastCrossed}`);
             this.beatLastCrossed = beatNow;
         }
     }
 }
 export default GameSoundManager;
-
 export const SOUNDMAN = GameSoundManager.getInstance();

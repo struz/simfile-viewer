@@ -8,6 +8,7 @@ export class RhythmAssist {
     public static rowLastCrossed = -1;
     public static clapSound = new Howl({
         src: [clapOgg],
+        volume: 0.2,  // TODO: make this a setting
     });
 
     public static playTicks() {
@@ -22,11 +23,10 @@ export class RhythmAssist {
         // This next line is for playing sounds early so they come out on time.
         // Worry about that later. -Struz
         // positionSeconds += SOUNDMAN->GetPlayLatency() + (float)CommonMetrics::TICK_EARLY_SECONDS + 0.250f;
-        const timing = GameState.gTimingData;
-        if (timing === null) { return; }
 
         const song = GAMESTATE.curSong;
         if (song === undefined) { return; }
+        const timing = song.songTiming;
         // TODO: don't just use getSteps(0), use an actual value
         const nd = song.getSteps(0).getNoteData();
 

@@ -1,5 +1,5 @@
 <template>
-  <v-app>
+  <v-app dark>
     <v-toolbar app>
       <v-toolbar-title class="headline text-uppercase">
         <span>Vuetify</span>
@@ -17,80 +17,66 @@
 
     <v-content>
       <HelloWorld/>
+      <v-btn v-on:click="play">Test</v-btn>
     </v-content>
   </v-app>
 </template>
 
 <script lang="ts">
 import HelloWorld from './components/HelloWorld.vue';
-
+import {Howl} from 'howler';
 import GameLoop from './lib/GameLoop';
 
-// Allow setting a global variable on the window
-declare global {
-  interface Window {
-    totalTime: any;
-    GAMESTATE: any;
-    song: any;
-  }
-}
-
+// Register our main loop as soon as the page loads
 (() => {
   function main() {
     const stopMain = window.requestAnimationFrame( main );
 
     // Your main loop contents
     GameLoop.gameLoop();
-    window.totalTime = GameLoop.totalTime;
   }
 
   main(); // Start the cycle
 })();
-// for (let i = 0; i < 1000; i++) {
-//   GameLoop.gameLoop();
-// }
-// console.log(GameLoop.totalTime);
 
-// TODO:
-// - load big sky
-// - start the loop
-// - write to console when a judgement would happen
+import GAMESTATE from '@/lib/GameState';
+import MsdFile from '@/lib/MsdFile';
+import NoteLoaderSM from '@/lib/NoteLoaderSM';
+import Song from '@/lib/Song';
 
-// Load Big Sky
-import MsdFile from './lib/MsdFile';
-import NoteLoaderSM from './lib/NoteLoaderSM';
-import fs from 'fs';
-import GAMESTATE, {GameState} from './lib/GameState';
-import GameSoundManager from './lib/GameSoundManager';
-
-let loadedSm = false;
-
-let bigSkySmFile = '';
+// Load SM file
+let song = new Song();
+let loadedSong = false;
 const rawFile = new XMLHttpRequest();
 rawFile.onreadystatechange = () => {
-    if (rawFile.readyState === 4) {
-        if (rawFile.status === 200 || rawFile.status === 0) {
-            bigSkySmFile = rawFile.responseText;
-            console.log('gotcha');
+  if (rawFile.readyState === 4) {
+    if (rawFile.status === 200 || rawFile.status === 0) {
+      const bigSkySmFileTxt = rawFile.responseText;
+      console.log('gotcha');
 
-            const msdFile = new MsdFile(bigSkySmFile);
-            const song = NoteLoaderSM.loadFromSimfile(msdFile);
-            loadedSm = true;
-
-            GAMESTATE.loadNextSong(song);
-            window.GAMESTATE = GAMESTATE;
-            window.song = song;
-        }
+      const msdFile = new MsdFile(bigSkySmFileTxt);
+      song = NoteLoaderSM.loadFromSimfile(msdFile);
+      loadedSong = true;
     }
+  }
 };
 rawFile.open('GET', './BigSky.sm', true);
 rawFile.send(null);
 
-if (GameSoundManager.bigSkyLoaded) {
-    GameSoundManager.bigSky.play();
-    GameState.gPlaying = true;
-}
+// Load music
+let loadedMusic = false;
+const bigSkyMusic = new Howl({
+  src: ['./bigsky.ogg'],
+  onload: () => {
+    console.log('gotcha2');
+    loadedMusic = true;
+  },
+  onloaderror: (_, msg) => {
+    console.log(`error loading bigsky.ogg: ${msg}`);
+  }
+});
 
+let playing = false;
 
 export default {
   name: 'App',
@@ -104,12 +90,10 @@ export default {
   },
   methods: {
     play: () => {
-      alert('hey');
-      if (loadedSm) {
-        if (GameSoundManager.bigSkyLoaded) {
-          GameSoundManager.bigSky.play();
-          GameState.gPlaying = true;
-        }
+      if (loadedMusic && loadedSong && !playing) {
+        playing = true;
+        bigSkyMusic.play();
+        GAMESTATE.loadNextSong(song);
       }
     },
   },
