@@ -1,10 +1,10 @@
 import * as PIXI from 'pixi.js';
 
-import DownReceptor from '@/assets/noteskins/USWCelETT/_Down_Receptor_Go_4x1.png';
-import DownTapNote from '@/assets/noteskins/USWCelETT/_Down_Tap_Note_16x8.png';
 import RESOURCEMAN from './ResourceManager';
 import TapNoteReceptorSprite from './entities/TapNoteReceptorSprite';
-import { TapNoteDirection, TAPNOTE_WIDTH_PX } from './NoteTypes';
+import { TapNoteDirection, TAPNOTE_WIDTH_PX, LANE_MARGIN } from './entities/EntitiesConstants';
+import TapNoteSprite from './entities/TapNoteSprite';
+import { NoteType } from './NoteTypes';
 
 interface ScreenManagerOptions {
     renderCanvas: HTMLCanvasElement;
@@ -75,13 +75,13 @@ export class ScreenManager {
                 TapNoteDirection.RIGHT,
             ];
             // TODO: rework this to center based on the width of the stage
-            const xOffset = 96;
+            const xOffset = LANE_MARGIN;
             const yOffset = 16;
             for (let i = 0; i < initOrder.length; i++) {
                 this.receptorSprites.push(
                     new TapNoteReceptorSprite(initOrder[i])
                     .setPos(
-                        xOffset + 32 + (i * TAPNOTE_WIDTH_PX),
+                        xOffset + (i * TAPNOTE_WIDTH_PX),
                         yOffset + 32)
                     .addToStage());
             }
@@ -89,6 +89,12 @@ export class ScreenManager {
         for (const receptor of this.receptorSprites) {
             receptor.getSprite().visible = true;
         }
+
+        const yPos = 100;
+        new TapNoteSprite(TapNoteDirection.LEFT, NoteType.N_4TH).setPosY(yPos).addToStage();
+        new TapNoteSprite(TapNoteDirection.DOWN, NoteType.N_8TH).setPosY(yPos).addToStage();
+        new TapNoteSprite(TapNoteDirection.UP, NoteType.N_12TH).setPosY(yPos).addToStage();
+        new TapNoteSprite(TapNoteDirection.RIGHT, NoteType.N_16TH).setPosY(yPos).addToStage();
         this.receptorsVisible = true;
     }
 

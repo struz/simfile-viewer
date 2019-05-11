@@ -99,18 +99,19 @@ export class TapNote {
             this.source !== other.source ||
             this.duration !== other.duration ||
             this.pn !== other.pn) {
-                return false;
-            }
+            return false;
+        }
         return true;
     }
 
     // This was a struct in C++ which allowed copy by assignation.
     // We deep copy here to get the same result.
     public copy(): TapNote {
-        return Object.assign( Object.create( Object.getPrototypeOf(this)), this);
+        return Object.assign(Object.create(Object.getPrototypeOf(this)), this);
     }
 }
 
+/** A collection of functions that manipulate note types and data. */
 export class NoteHelpers {
     public static beatToNoteRow(beatNum: number) {
         return Math.round(beatNum * ROWS_PER_BEAT);
@@ -131,13 +132,93 @@ export class NoteHelpers {
      * @return the scaled position
      */
     public static scalePosition(start: number, length: number, newLength: number, position: number): number {
-        if (position < start ) {
+        if (position < start) {
             return position;
         }
-        if (position >= start + length ) {
+        if (position >= start + length) {
             return position - length + newLength;
         }
         return start + (position - start) * newLength / length;
+    }
+
+    /**
+     * Convert the NoteType to a beat representation.
+     * @param nt the NoteType to check.
+     * @return the proper beat.
+     */
+    public static noteTypeToBeat(nt: NoteType) {
+        switch (nt) {
+            case NoteType.N_4TH:   return 1;	    // quarter notes
+            case NoteType.N_8TH:   return 1 / 2;	// eighth notes
+            case NoteType.N_12TH:  return 1 / 3;	// quarter note triplets
+            case NoteType.N_16TH:  return 1 / 4;	// sixteenth notes
+            case NoteType.N_24TH:  return 1.0 / 6;	// eighth note triplets
+            case NoteType.N_32ND:  return 1 / 8;	// thirty-second notes
+            case NoteType.N_48TH:  return 1 / 12;   // sixteenth note triplets
+            case NoteType.N_64TH:  return 1 / 16;   // sixty-fourth notes
+            case NoteType.N_192ND: return 1 / 48;   // sixty-fourth note triplets
+            case NoteType.Invalid: return 1 / 48;
+            default:
+                throw new Error(`Unrecognized note type: ${nt}`);
+        }
+    }
+
+    public static noteTypeToRow(nt: NoteType) {
+        switch (nt) {
+            case NoteType.N_4TH: return 48;
+            case NoteType.N_8TH: return 24;
+            case NoteType.N_12TH: return 16;
+            case NoteType.N_16TH: return 12;
+            case NoteType.N_24TH: return 8;
+            case NoteType.N_32ND: return 6;
+            case NoteType.N_48TH: return 4;
+            case NoteType.N_64TH: return 3;
+            case NoteType.N_192ND:
+            case NoteType.Invalid:
+                return 1;
+            default:
+                throw new Error(`Unrecognized note type: ${nt}`);
+        }
+    }
+
+    /**
+     * Retrieve the proper quantized NoteType for the note.
+     * @param row The row to check for.
+     * @return the quantized NoteType.
+     */
+    public static getNoteType(row: number): NoteType {
+        if (row % (ROWS_PER_MEASURE / 4) === 0) {
+            return NoteType.N_4TH;
+        } else if (row % (ROWS_PER_MEASURE / 8) === 0) {
+            return NoteType.N_8TH;
+        } else if (row % (ROWS_PER_MEASURE / 12) === 0) {
+            return NoteType.N_12TH;
+        } else if (row % (ROWS_PER_MEASURE / 16) === 0) {
+            return NoteType.N_16TH;
+        } else if (row % (ROWS_PER_MEASURE / 24) === 0) {
+            return NoteType.N_24TH;
+        } else if (row % (ROWS_PER_MEASURE / 32) === 0) {
+            return NoteType.N_32ND;
+        } else if (row % (ROWS_PER_MEASURE / 48) === 0) {
+            return NoteType.N_48TH;
+        } else if (row % (ROWS_PER_MEASURE / 64) === 0) {
+            return NoteType.N_64TH;
+        }
+        return NoteType.N_192ND;
+    }
+
+    public static beatToNoteType(beat: number) {
+        return this.getNoteType(NoteHelpers.beatToNoteRow(beat));
+    }
+
+    /**
+     * Determine if the row has a particular type of quantized note.
+     * @param row the row in the Steps.
+     * @param t the quantized NoteType to check for.
+     * @return true if the NoteType is t, false otherwise.
+     */
+    public static isNoteOfType(row: number, t: NoteType) {
+        return this.getNoteType(row) === t;
     }
 }
 export default NoteHelpers;
@@ -167,6 +248,10 @@ export enum NoteType {
     NUM,
     Invalid,
 }
+
+// STEPMANIA-TODO: Remove these constants that aren't time signature-aware
+export const BEATS_PER_MEASURE = 4;
+export const ROWS_PER_MEASURE = ROWS_PER_BEAT * BEATS_PER_MEASURE;
 
 export class TapNotes {
     public static EMPTY = TapNote.create(
@@ -205,14 +290,4 @@ export class TapNotes {
     public static newOriginalFake() { return this.ORIGINAL_FAKE.copy(); }
     public static newAdditionTap() { return this.ADDITION_TAP.copy(); }
     public static newAdditionMine() { return this.ADDITION_MINE.copy(); }
-}
-
-export const TAPNOTE_WIDTH_PX = 64;
-export const TAPNOTE_HEIGHT_PX = 64;
-
-export enum TapNoteDirection {
-    DOWN,
-    LEFT,
-    UP,
-    RIGHT,
 }

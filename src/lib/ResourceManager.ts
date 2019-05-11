@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 
 import DownReceptor from '@/assets/noteskins/USWCelETT/_Down_Receptor_Go_4x1.png';
 import DownTapNote from '@/assets/noteskins/USWCelETT/_Down_Tap_Note_16x8.png';
-import { TAPNOTE_WIDTH_PX, TAPNOTE_HEIGHT_PX } from './NoteTypes';
+import { TAPNOTE_WIDTH_PX, TAPNOTE_HEIGHT_PX } from './entities/EntitiesConstants';
 import SCREENMAN from './ScreenManager';
 
 interface LoadSpriteInfo {

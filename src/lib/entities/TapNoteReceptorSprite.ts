@@ -1,7 +1,7 @@
 import TapNoteSprite from './TapNoteSprite';
 import GameSprite from './GameSprite';
 import RESOURCEMAN, { DOWN_TAP_NOTE_RECEPTOR_SHEET_NAME } from '../ResourceManager';
-import { TapNoteDirection } from '../NoteTypes';
+import { TapNoteDirection } from './EntitiesConstants';
 
 class TapNoteReceptorSprite extends GameSprite {
     private direction: TapNoteDirection;
@@ -14,6 +14,7 @@ class TapNoteReceptorSprite extends GameSprite {
         super(RESOURCEMAN.getSpriteInfo(DOWN_TAP_NOTE_RECEPTOR_SHEET_NAME));
 
         this.direction = direction;
+        this.sprite.alpha = 0.75;
 
         // Set the rotation based on the direction, using the down arrow as a reference
         this.sprite.rotation = (90 * this.direction) * (Math.PI / 180);

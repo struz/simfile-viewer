@@ -31,6 +31,14 @@ abstract class GameSprite {
         this.sprite.y = y;
         return this;
     }
+    public setPosX(x: number) {
+        this.sprite.x = x;
+        return this;
+    }
+    public setPosY(y: number) {
+        this.sprite.y = y;
+        return this;
+    }
     public addToStage() {
         SCREENMAN.getPixiApp().stage.addChild(this.sprite);
         return this;

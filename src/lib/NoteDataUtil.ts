@@ -1,11 +1,6 @@
 import NoteData from './NoteData';
-import { start } from 'repl';
 import { PLAYER_INVALID, PlayerNumber } from './PlayerNumber';
-import NoteHelpers, { TapNote, TapNotes, MAX_NOTE_ROW, TapNoteType, ROWS_PER_BEAT } from './NoteTypes';
-
-// STEPMANIA-TODO: Remove these constants that aren't time signature-aware
-export const BEATS_PER_MEASURE = 4;
-export const ROWS_PER_MEASURE = ROWS_PER_BEAT * BEATS_PER_MEASURE;
+import NoteHelpers, { TapNote, TapNotes, MAX_NOTE_ROW, TapNoteType, BEATS_PER_MEASURE } from './NoteTypes';
 
 /**
  * Utility functions that deal with NoteData.

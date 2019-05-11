@@ -2,7 +2,6 @@
 // tslint:disable: max-classes-per-file
 
 import NoteHelpers from './NoteTypes';
-import { BEATS_PER_MEASURE } from './NoteDataUtil';
 
 export enum TimingSegmentType {
     BPM,
