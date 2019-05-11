@@ -732,6 +732,34 @@ export class TimingData {
         // row is before first segment of type tst
         return INVALID_INDEX;
     }
+    public getSegmentIndexAtBeat(tst: TimingSegmentType, beat: number) {
+        return this.getSegmentIndexAtRow(tst, NoteHelpers.beatToNoteRow(beat));
+    }
+
+    public getNextSegmentBeatAtRow(tst: TimingSegmentType, row: number) {
+        const segs = this.getTimingSegments(tst);
+        for (const seg of segs) {
+            if (seg.getRow() <= row) { continue; }
+            return seg.getBeat();
+        }
+        return NoteHelpers.noteRowToBeat(row);
+    }
+    public getNextSegmentBeatAtBeat(tst: TimingSegmentType, beat: number) {
+        return this.getNextSegmentBeatAtRow(tst, NoteHelpers.beatToNoteRow(beat));
+    }
+
+    public getPreviousSegmentBeatAtRow(tst: TimingSegmentType, row: number) {
+        let backup = -1;
+        const segs = this.getTimingSegments(tst);
+        for (const seg of segs) {
+            if (seg.getRow() >= row) { break; }
+            backup = seg.getBeat();
+        }
+        return (backup > -1) ? backup : NoteHelpers.noteRowToBeat(row);
+    }
+    public getPreviousSegmentBeatAtBeat(tst: TimingSegmentType, beat: number) {
+        return this.getPreviousSegmentBeatAtRow(tst, NoteHelpers.beatToNoteRow(beat));
+    }
 
     public getBeatFromElapsedTime(elapsedTime: number): number {
         const args = new GetBeatArgs();
@@ -774,6 +802,18 @@ export class TimingData {
             start = lookedUpStart[1];
         }
         this.getBeatInternal(start, args, Number.MAX_SAFE_INTEGER);
+    }
+
+    public getDisplayedSpeedPercent(songBeat: number, musicSeconds: number) {
+        const speeds = this.getTimingSegments(TimingSegmentType.SPEED);
+        if (speeds.length === 0) { return 1; }
+        return 1;
+
+        // TODO: finish me when we implement SpeedSegment
+
+        // const index = this.getSegmentIndexAtBeat(TimingSegmentType.SPEED, songBeat);
+
+        // const seg = (speeds[index] as SpeedSegment);
     }
 
     public tidyUpData(allowEmpty: boolean) {

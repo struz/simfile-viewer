@@ -20,6 +20,16 @@ export function directionToLaneIndex(direction: TapNoteDirection) {
         default: throw new Error(`unknown TapNoteDirection: ${direction}`);
     }
 }
+export function laneIndexToDirection(laneIndex: number) {
+    switch (laneIndex) {
+        case 0: return 1;
+        case 1: return 0;
+        case 2:
+        case 3:
+            return laneIndex;
+        default: throw new Error(`unknown laneIndex: ${laneIndex}`);
+    }
+}
 
 /** The margin on each side of the lane outside of the note tracks. */
 export const LANE_MARGIN = 64;

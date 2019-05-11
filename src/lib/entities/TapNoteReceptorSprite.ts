@@ -22,5 +22,9 @@ class TapNoteReceptorSprite extends GameSprite {
     }
 
     public getDirection() { return this.direction; }
+
+    public update() {
+        return this;
+    }
 }
 export default TapNoteReceptorSprite;

@@ -54,7 +54,9 @@ export class GameState {
      * Is the game right now using Song timing or Steps timing?
      * Different options are available depending on this setting.
      */
-    public isUsingStepTiming = true;
+    // Default to the song timing UNLIKE STEPMANIA. This is because
+    // we haven't perfected the pass through chain to steps yet. -Struz
+    public isUsingStepTiming = false;
 
 
     // Timing position corrections

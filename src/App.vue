@@ -29,12 +29,19 @@ import GameLoop from './lib/GameLoop';
 import SCREENMAN from '@/lib/ScreenManager.ts';
 
 // Register our main loop as soon as the page loads
+// TODO: work out why this is so much better for syncing claps
+// than the pixi ticker. It may just be that we want the audio
+// loops way faster than screen draws.
+// NOTE: very well might have been placebo from the two tries.
+// Had the best sync ever with the ticker. I think what happened
+// was that I didn't wait for the ticker to warm up - pressing test
+// too early on page load fucks the syncing.
 (() => {
   function main() {
     const stopMain = window.requestAnimationFrame( main );
 
     // Your main loop contents
-    GameLoop.gameLoop();
+    GameLoop.gameLoop(0);
   }
 
   main(); // Start the cycle

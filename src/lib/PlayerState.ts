@@ -1,5 +1,4 @@
 import SongPosition from './SongPosition';
-import GameState from './GameState';
 import GAMESTATE from './GameState';
 import { PlayerNumber } from './PlayerNumber';
 

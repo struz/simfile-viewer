@@ -95,7 +95,7 @@ export class GameTimer {
     public isZero(): boolean { return this.secs === 0 && this.us === 0; }
     public setZero() { this.secs = 0; this.us = 0; }
 
-    /* Time between last call to GetDeltaTime() (Ago() + Touch()): */
+    /** Time between last call to GetDeltaTime() (Ago() + Touch()): */
     public getDeltaTime() {
         const now = new GameTimer();
         const diff = GameTimer.difference(now, this);

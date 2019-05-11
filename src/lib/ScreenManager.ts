@@ -5,6 +5,8 @@ import TapNoteReceptorSprite from './entities/TapNoteReceptorSprite';
 import { TapNoteDirection, TAPNOTE_WIDTH_PX, LANE_MARGIN } from './entities/EntitiesConstants';
 import TapNoteSprite from './entities/TapNoteSprite';
 import { NoteType } from './NoteTypes';
+import GameLoop from './GameLoop';
+import NoteField from './entities/NoteField';
 
 interface ScreenManagerOptions {
     renderCanvas: HTMLCanvasElement;
@@ -17,6 +19,9 @@ interface ScreenManagerOptions {
  * a canvas and PIXI hook later.
  */
 export class ScreenManager {
+    /** Get the desired FPS of the application. */
+    public static desiredFps() { return 60; }
+
     // Singleton
     public static getInstance() {
         if (!ScreenManager.instance) {
@@ -34,10 +39,13 @@ export class ScreenManager {
     private receptorsVisible = false;
     private receptorSprites: TapNoteReceptorSprite[] = [];
 
+    private noteField: NoteField | undefined;
+
     // Private constructor for singleton
     private constructor() {}
 
     public initPixi(options: ScreenManagerOptions) {
+        console.log('initpixi');
         // Create a new PIXI app.
         this.pixiApp = new PIXI.Application({
             width: options.width,
@@ -48,6 +56,9 @@ export class ScreenManager {
         // Tell the resource manager it can load things now
         RESOURCEMAN.loadSprites();
         // Start the tick loop for animations and other such things
+        this.pixiApp.ticker.maxFPS = ScreenManager.desiredFps();
+        // Disabled because our logic just stacks up animation frames since it's search-heavy
+        // this.pixiApp.ticker.add(GameLoop.gameLoop);
         this.pixiApp.ticker.start();
     }
 
@@ -90,11 +101,12 @@ export class ScreenManager {
             receptor.getSprite().visible = true;
         }
 
-        const yPos = 100;
-        new TapNoteSprite(TapNoteDirection.LEFT, NoteType.N_4TH).setPosY(yPos).addToStage();
-        new TapNoteSprite(TapNoteDirection.DOWN, NoteType.N_8TH).setPosY(yPos).addToStage();
-        new TapNoteSprite(TapNoteDirection.UP, NoteType.N_12TH).setPosY(yPos).addToStage();
-        new TapNoteSprite(TapNoteDirection.RIGHT, NoteType.N_16TH).setPosY(yPos).addToStage();
+        // const secondBeat = 2;
+        // new TapNoteSprite(TapNoteDirection.LEFT, NoteType.N_4TH, secondBeat).addToStage();
+        // new TapNoteSprite(TapNoteDirection.DOWN, NoteType.N_8TH, secondBeat).addToStage();
+        // new TapNoteSprite(TapNoteDirection.UP, NoteType.N_12TH, secondBeat).addToStage();
+        // new TapNoteSprite(TapNoteDirection.RIGHT, NoteType.N_16TH, secondBeat).addToStage();
+        this.noteField = new NoteField();
         this.receptorsVisible = true;
     }
 

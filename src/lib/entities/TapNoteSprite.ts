@@ -2,24 +2,27 @@ import { NoteType } from '../NoteTypes';
 import { TapNoteDirection, TAPNOTE_WIDTH_PX, LANE_MARGIN, directionToLaneIndex } from './EntitiesConstants';
 import RESOURCEMAN, { DOWN_TAP_NOTE_SHEET_NAME } from '../ResourceManager';
 import GameSprite from './GameSprite';
+import ArrowEffects from '../ArrowEffects';
 
 const NOTESKIN = 'USWCelETT';
 
 class TapNoteSprite extends GameSprite {
     private direction: TapNoteDirection;
     private noteType: NoteType;
+    private noteBeat: number;
 
 
     /** Create a new tap note sprite.
      * @param direction the direction the arrow should go in.
      * @param noteType the type of note (4th, 16th, etc).
      */
-    constructor(direction: TapNoteDirection, noteType: NoteType) {
+    constructor(direction: TapNoteDirection, noteType: NoteType, noteBeat: number) {
         GameSprite.checkDependencies();
         super(RESOURCEMAN.getSpriteInfo(DOWN_TAP_NOTE_SHEET_NAME), noteType);
 
         this.direction = direction;
         this.noteType = noteType;
+        this.noteBeat = noteBeat;  // TODO: NoteType can be derived by beat
 
         // Set the rotation based on the direction, using the down arrow as a reference
         this.sprite.rotation = (90 * this.direction) * (Math.PI / 180);
@@ -27,6 +30,7 @@ class TapNoteSprite extends GameSprite {
         // Set the x based on the note track
         const laneIndex = directionToLaneIndex(this.direction);
         this.sprite.x = LANE_MARGIN + (TAPNOTE_WIDTH_PX * laneIndex);
+        this.setYPosBasedOnBeat();
 
         // Ensure it starts animated
         this.sprite.play();
@@ -34,5 +38,22 @@ class TapNoteSprite extends GameSprite {
 
     public getDirection() { return this.direction; }
     public getNoteType() { return this.noteType; }
+    public getBeat() { return this.noteBeat; }
+
+    public setYPosBasedOnBeat() {
+        const peakYOffset = {value: 0};
+        const isPastPeakOut = {value: false};
+        this.sprite.y = ArrowEffects.getYOffset(this.noteBeat, peakYOffset, isPastPeakOut);
+    }
+
+    public update(deltaTime: number) {
+        // // 1 / 60 = 0.016 is when we move 3 px per frame. More than this and we move more, less and we move less.
+        // // Multiply by FPS (60) to get the amount to move (more or less).
+        // const movement = 3 * (deltaTime * 60);
+        // this.sprite.y += movement;
+        // this.sprite.y = 400; // TODO: base this off the beat the note is on so we can just create notes @ beats
+        this.setYPosBasedOnBeat();
+        return this;
+    }
 }
 export default TapNoteSprite;
