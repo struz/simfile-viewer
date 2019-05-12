@@ -31,7 +31,7 @@ export class EntityManager {
         for (let i = 0; i < this.entities.length; i++) {
             if (this.entities[i] === entity) {
                 // TODO: Not the most efficient implementation. Change later.
-                this.entities = this.entities.splice(i, 1);
+                this.entities.splice(i, 1);
             }
         }
         return this;

@@ -12,6 +12,7 @@ import { Component } from 'vue-property-decorator';
 
 import SCREENMAN, { ScreenManager } from '@/lib/ScreenManager';
 
+// See https://vuejs.org/v2/guide/typescript.html for why we do the below
 @Component
 class Screen extends Vue {
   public $refs!: {

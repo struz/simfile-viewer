@@ -1,5 +1,5 @@
 import GameTimer from './GameTimer';
-import { SOUNDMAN } from './GameSoundManager';
+import SOUNDMAN from './GameSoundManager';
 import GAMESTATE from './GameState';
 import RhythmAssist from './RhythmAssist';
 import SCREENMAN from './ScreenManager';

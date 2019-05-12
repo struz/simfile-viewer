@@ -7,6 +7,7 @@ import { GameTimer, gZeroTimer } from './GameTimer';
 import { Steps } from './Steps';
 import Song from './Song';
 import { NotImplementedError } from './Error';
+import SOUNDMAN from './GameSoundManager';
 
 
 /** Holds all the state about the game. A singleton. */
@@ -106,6 +107,14 @@ export class GameState {
         if (this.curSong !== undefined) {
             // TODO: request lookup data for the new song
         }
+    }
+
+    public play() {
+        SOUNDMAN.handleSongTimer(true);
+    }
+
+    public pause() {
+        SOUNDMAN.handleSongTimer(false);
     }
 
     /** Update the game state.

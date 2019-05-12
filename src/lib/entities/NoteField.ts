@@ -168,7 +168,6 @@ class NoteField extends Entity {
 
         // The C++ code uses a const iterator here. Performance? -Struz
         // What it does is set the start and end iterators to the range it wants to iterate over
-        const outerRow = {value: 0};
 
         // the gist below is: for each note detect whether it's between the first and last beats
         // to draw. IF IT IS draw it.
@@ -180,7 +179,7 @@ class NoteField extends Entity {
         // caveats:
         // - warps wouldn't play nicely and would need special logic?
         // fixes:
-        // - could check all the 
+        // - could check all the
 
         // another way:
         // get the row of the current beat, that's anchored on the receptors.
@@ -194,17 +193,17 @@ class NoteField extends Entity {
         // TODO: fix steps index below
         const nd = GAMESTATE.curSong.getSteps(0).getNoteData();
         for (let t = 0; t < nd.tapNotes.length; t++) {
-            for (const tn of nd.tapNotes[t]) {
-                // IMPORTANT: TODO: assert ordering
-                if (tn[0] < firstRow) { continue; }
-                if (tn[0] > lastRow) { break; }
-                if (tn[1].type !== TapNoteType.Tap && tn[1].type !== TapNoteType.HoldHead) { continue; }
+            for (const tnEntry of nd.tapNotes[t]) {
+                // IMPORTANT: this array MUST be ordered or this continue/break logic won't work.
+                if (tnEntry[0] < firstRow) { continue; }
+                if (tnEntry[0] > lastRow) { break; }
+                if (tnEntry[1].type !== TapNoteType.Tap && tnEntry[1].type !== TapNoteType.HoldHead) { continue; }
 
                 // If we don't have the note already, create it
-                if (this.noteTracks[t].has(tn[0])) { continue; }
+                if (this.noteTracks[t].has(tnEntry[0])) { continue; }
 
-                const beat = NoteHelpers.noteRowToBeat(tn[0]);
-                this.noteTracks[t].set(tn[0], new TapNoteSprite(
+                const beat = NoteHelpers.noteRowToBeat(tnEntry[0]);
+                this.noteTracks[t].set(tnEntry[0], new TapNoteSprite(
                     laneIndexToDirection(t),
                     NoteHelpers.beatToNoteType(beat),
                     beat,
@@ -212,8 +211,24 @@ class NoteField extends Entity {
             }
         }
 
-        // Cleanup notes out of range
-        // TODO:
+        // Clean up the notes that are out of range
+        // We could do the cleanup in the same loop above but we might end up doing too many .has() lookups
+        // Instead, do a separate loop
+        const toDestroy: Array<[number, TapNoteSprite, Map<number, TapNoteSprite>]> = [];
+        for (const track of this.noteTracks) {
+            for (const tnsEntry of track) {
+                if (tnsEntry[0] < firstRow || tnsEntry[0] > lastRow) {
+                    // The sprite is out of our valid window for management, destroy it
+                    // Avoid doing it in here in case it changes the internals and ruins
+                    // iteration.
+                    toDestroy.push([tnsEntry[0], tnsEntry[1], track]);
+                }
+            }
+        }
+        toDestroy.forEach((tnsAndTrackEntry) => {
+            tnsAndTrackEntry[2].delete(tnsAndTrackEntry[0]);
+            tnsAndTrackEntry[1].destroy(); // destroy the entity
+        });
     }
 
     public update(deltaTime: number) {

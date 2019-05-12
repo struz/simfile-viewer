@@ -70,6 +70,7 @@ export class ScreenManager {
 
     public setBgColor(color: number) { this.getPixiApp().renderer.backgroundColor = color; }
 
+    // TODO: move receptors into NoteField
     /** Draw the receptors to the screen. If they're already there do nothing. */
     public showReceptors() {
         // TODO: loop over numTracks
@@ -109,13 +110,6 @@ export class ScreenManager {
         }
         this.receptorsVisible = false;
     }
-
-    public update(deltaTime: number) {
-        // TODO:
-    }
 }
 const SCREENMAN = ScreenManager.getInstance();
 export default SCREENMAN;
-
-// TODO: ScreenManager should just have an update function which controls everything based on external representation.
-// Its job is to expire arrow visual representations when no longer necessary, etc.
