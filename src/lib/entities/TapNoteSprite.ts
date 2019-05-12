@@ -3,6 +3,7 @@ import { TapNoteDirection, TAPNOTE_WIDTH_PX, LANE_MARGIN, directionToLaneIndex }
 import RESOURCEMAN, { DOWN_TAP_NOTE_SHEET_NAME } from '../ResourceManager';
 import GameSprite from './GameSprite';
 import ArrowEffects from '../ArrowEffects';
+import { RECEPTOR_MARGIN_TOP_PX } from './TapNoteReceptorSprite';
 
 const NOTESKIN = 'USWCelETT';
 
@@ -43,7 +44,9 @@ class TapNoteSprite extends GameSprite {
     public setYPosBasedOnBeat() {
         const peakYOffset = {value: 0};
         const isPastPeakOut = {value: false};
-        this.sprite.y = ArrowEffects.getYOffset(this.noteBeat, peakYOffset, isPastPeakOut);
+        // Add the RECEPTOR_MARGIN_TOP_PX because the beat is synced to the top of the view screen
+        // and we want it synced to the receptors.
+        this.sprite.y = ArrowEffects.getYOffset(this.noteBeat, peakYOffset, isPastPeakOut) + RECEPTOR_MARGIN_TOP_PX;
     }
 
     public update(deltaTime: number) {

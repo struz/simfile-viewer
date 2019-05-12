@@ -3,9 +3,6 @@ import * as PIXI from 'pixi.js';
 import RESOURCEMAN from './ResourceManager';
 import TapNoteReceptorSprite from './entities/TapNoteReceptorSprite';
 import { TapNoteDirection, TAPNOTE_WIDTH_PX, LANE_MARGIN } from './entities/EntitiesConstants';
-import TapNoteSprite from './entities/TapNoteSprite';
-import { NoteType } from './NoteTypes';
-import GameLoop from './GameLoop';
 import NoteField from './entities/NoteField';
 
 interface ScreenManagerOptions {
@@ -85,15 +82,9 @@ export class ScreenManager {
                 TapNoteDirection.UP,
                 TapNoteDirection.RIGHT,
             ];
-            // TODO: rework this to center based on the width of the stage
-            const xOffset = LANE_MARGIN;
-            const yOffset = 16;
-            for (let i = 0; i < initOrder.length; i++) {
+            for (const direction of initOrder) {
                 this.receptorSprites.push(
-                    new TapNoteReceptorSprite(initOrder[i])
-                    .setPos(
-                        xOffset + (i * TAPNOTE_WIDTH_PX),
-                        yOffset + 32)
+                    new TapNoteReceptorSprite(direction)
                     .addToStage());
             }
         }

@@ -33,14 +33,16 @@ class ArrowEffects {
     public static noteStatCache: CacheNoteStat[] = [];
 
     // OPTIONS - may need to move these to another class later
+    /* All floats have a corresponding speed setting, which determines how fast
+    * PlayerOptions::Approach approaches. */
     /** timeSpacing of 0 means cmod, mmod as we are using beat instead of time. */
     public static timeSpacing = 0;
-    public static maxScrollBpm = 0;
+    public static maxScrollBpm = 0;  // What happens if we set this > 0? -Struz
     // next two used if !timeSpacing (xMods)
-    public static scrollSpeed = 100;
+    public static scrollSpeed = 220;  // This seems to have an overcentralising effect. FIXME: -Struz
     public static speedScrollSpeed = 1;
     // next two used it timeSpacing (CMod)
-    public static scrollBpm = 400;
+    public static scrollBpm = 1000;
     public static speedScrollBpm = 1;
 
     // Next one was on PlayerState for some reason
@@ -78,7 +80,7 @@ class ArrowEffects {
         }
 
         if (this.timeSpacing !== 0) {
-
+            // !== 0 means xmod
             const songSeconds = GAMESTATE.position.musicSecondsVisible;
             const noteSeconds = timingData.getElapsedTimeFromBeat(noteBeat);
             // DEBUGGING: the song is literally ahead of the beat here, hence why we have the weird shit

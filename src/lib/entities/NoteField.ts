@@ -170,6 +170,25 @@ class NoteField extends Entity {
         // What it does is set the start and end iterators to the range it wants to iterate over
         const outerRow = {value: 0};
 
+        // the gist below is: for each note detect whether it's between the first and last beats
+        // to draw. IF IT IS draw it.
+        // the real mvp here would be to:
+        // - assume note data won't change mid song and keep an iterator to it between calls
+        // - work out how many noteRow boundaries we've crossed since the last update
+        // - check all those note rows for tap notes and create the sprites
+        // ^ the above would need an initialise that looks ahead a certain amount
+        // caveats:
+        // - warps wouldn't play nicely and would need special logic?
+        // fixes:
+        // - could check all the 
+
+        // another way:
+        // get the row of the current beat, that's anchored on the receptors.
+        // adjust every arrow relative to that every frame
+
+        // the way the game does it:
+        // FILLMEOUT
+
         // We use a direct loop here so we can access the data immediately but the abstraction
         // is lost. Build a generic version of this efficient abstraction somewhere.
         // TODO: fix steps index below
