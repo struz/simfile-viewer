@@ -37,7 +37,6 @@ export class TrackMap {
         this.mapReverse = new Map();
         this.size = 0;
         this.isSorted = true;
-        this.autoSort = true;
         this.proxy();
     }
 
@@ -66,7 +65,7 @@ export class TrackMap {
     // second copy of the map.
     public reverseEntries(startAt?: number, endAt?: number) {
         this.sort();
-        return new TrackMapIterator(this.reverseMap, IteratorDirection.Backwards, startAt, endAt);
+        return new TrackMapIterator(this.mapReverse, IteratorDirection.Backwards, startAt, endAt);
     }
     public reverseKeys() {
         this.sort();
@@ -76,6 +75,10 @@ export class TrackMap {
         this.sort();
         return this.mapReverse.values();
     }
+
+    // TODO: when we delete we need to mirror the delete to the
+    // other map. They will stay sorted this way! Otherwise we need to
+    // invalidate and sort again.
 
     /** Wrapper for map.set() that sets some extra state. */
     public set(key: number, value: TapNote) {
@@ -97,10 +100,9 @@ export class TrackMap {
         const sortedEntriesDesc = sortedEntriesAsc.slice().reverse();
 
         this.map = new Map(sortedEntriesAsc);
-        this.reverseMap = new Map(sortedEntriesDesc);
+        this.mapReverse = new Map(sortedEntriesDesc);
         this.isSorted = true;
         this.proxy();
-        // TODO: make sure that .proxy() is also adding things to the reversed array
     }
 
     /**
@@ -455,8 +457,6 @@ export class NoteData {
      * pHeadRow is non-nullptr, return the row of the head. (Note that this returns
      * false if a hold head lies on iRow itself.) */
     public isHoldNoteAtRow(track: number, row: number, headRow: PassByRef<number>) {
-        // headRow is really a pass-by-ref single number
-
         /* Starting at iRow, search upwards. If we find a TapNoteType_HoldHead, we're within
          * a hold. If we find a tap, mine or attack, we're not--those never lie
          * within hold notes. Ignore autoKeysound. */

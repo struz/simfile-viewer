@@ -56,28 +56,22 @@ export class NoteDataUtil {
         // Then cleanup by ensuring no leftover hold notes
 
         const emptyFilter = (x: string) => {
-            // trimLeft() rather than trim() to emulate the StepMania char by char stuff
-            return x.trimLeft().length !== 0;
+            return x.length !== 0;
         };
         // Split the song into measures and filter out any empty entries
-        const measures = smNoteData.split(',').filter(emptyFilter);
+        const measures = smNoteData.split(',')
+            .map((x) => x.trim())
+            .filter(emptyFilter);
         for (let measureIndex = 0; measureIndex < measures.length; measureIndex++) {
             const measure = measures[measureIndex];
 
-            // Split the measure into lines and filter out any empty entries
-            const measureLines = measure.split('\n').filter(emptyFilter);
+            // Split the measure into lines, trim them all, and remove any empty entries
+            // This emulates the StepMania "find whitespace start & end and line is between that" logic
+            const measureLines = measure.split('\n')
+                .map((x) => x.trim())
+                .filter(emptyFilter);
             for (let lineIndex = 0; lineIndex < measureLines.length; lineIndex++) {
-                let line = measureLines[lineIndex];
-
-                // Do the same thing as the stepmania code with empty characters
-                // I'm not sure if it's necessary. If not rip this out later. - Struz
-                const match = line.search(/[\t\n\r ]/);
-                if (match !== -1) {
-                    line = line.substring(0, match);
-                    if (line.length === 0) {
-                        continue;
-                    }
-                }
+                const line = measureLines[lineIndex];
 
                 // Some calculations for placing data
                 const percentIntoMeasure = lineIndex / measureLines.length;

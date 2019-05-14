@@ -115,7 +115,7 @@ class ArrowEffects {
         let l = 0;
         let r = max;
         while (l <= r) {
-            const m = (l + r) / 2;
+            const m = Math.trunc((l + r) / 2); // int
             if ((m === 0 || data[m].beat <= beat) && (m === max || beat < data[m + 1].beat)) {
                 return data[m].displayedBeat + data[m].velocity * (beat - data[m].beat);
             } else if (data[m].beat <= beat) {

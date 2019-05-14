@@ -55,7 +55,7 @@ class NoteField extends Entity {
 
         // This looks like some kind of beat-and-iteration-bounded binary search -Struz
         for (let i = 0; i < NUM_ITERATIONS; i++) {
-            const mid = (low + high) / 2;
+            const mid = (low + high) / 2; // float (because it's a beat)
 
             const isPastPeakYOffset = {value: false};
             const peakYOffset = {value: 0};
@@ -115,7 +115,7 @@ class NoteField extends Entity {
         let l = 0;
         let r = max;
         while (l <= r) {
-            const m = (l + r) / 2;
+            const m = Math.trunc((l + r) / 2); // int
             if ((m === 0 || data[m].beat <= beat) && (m === max || beat < data[m + 1].beat)) {
                 return data[m];
             } else if (data[m].beat <= beat) {

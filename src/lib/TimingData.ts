@@ -113,7 +113,7 @@ export class TimingData {
 
         // Otherwise use a binary search to find it
         while (upper - lower > 1) {
-            const next = (upper + lower) / 2;
+            const next = Math.trunc((upper + lower) / 2); // int
             lookupItem = lookup[next];
             if (lookupItem === undefined) { throw new Error('lookup[next] must be defined'); }
             if (lookupItem[0] > entry) {
@@ -651,7 +651,7 @@ export class TimingData {
 
         // the segment at or before this row is equal to the new one; ignore it
         // NOTE: this is NOT pointer math - it's a .equals
-        if (onSameRow && (cur === seg)) {
+        if (onSameRow && (cur.equals(seg))) {
             return;
         }
 
@@ -661,13 +661,16 @@ export class TimingData {
         const copy = Object.assign(Object.create(Object.getPrototypeOf(seg)), seg);
         if (onSameRow) {
             // TODO: check memory leaks
+            // delete the existing segment and replace it
             segs[index] = copy;
         } else {
             // Find the first element that isn't comparatively less than `copy`
             let i = segs.findIndex((ts) => !ts.lessThan(copy));
             if (i === -1) {
-                i = 0;
+                // No element is < copy, insert at end to maintain ordering
+                i = segs.length;
             }
+
             segs.splice(i, 0, copy);
         }
     }
@@ -714,13 +717,16 @@ export class TimingData {
             return INVALID_INDEX;
         }
 
+        // TODO: this not working? Not finding correct segment
+        // BECAUSE ITS ORDERED IN REVERSE
+
         const min = 0;
         const max = segs.length - 1;
         let l = min;
         let r = max;
         // Do a binary search to find the row, if any
         while ( l <= r ) {
-            const m = (l + r) / 2;
+            const m = Math.trunc((l + r) / 2); // int
             if ( ( m === min || segs[m].getRow() <= row ) && ( m === max || row < segs[m + 1].getRow() ) ) {
                 return m;
             } else if (segs[m].getRow() <= row) {
