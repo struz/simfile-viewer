@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 
 import DownReceptor from '@/assets/noteskins/USWCelETT/_Down_Receptor_Go_4x1.png';
 import DownTapNote from '@/assets/noteskins/USWCelETT/_Down_Tap_Note_16x8.png';
+import TapMine from '@/assets/noteskins/common/Fallback_Tap_Mine_8x1.png';
 import { TAPNOTE_WIDTH_PX, TAPNOTE_HEIGHT_PX } from './entities/EntitiesConstants';
 import SCREENMAN from './ScreenManager';
 
@@ -28,6 +29,8 @@ export interface GameSpriteInfo {
 export const DOWN_TAP_NOTE_SHEET_NAME = 'DownTapNoteSheet';
 export const DOWN_TAP_NOTE_RECEPTOR_SHEET_NAME = 'DownReceptorSheet';
 
+export const TAP_MINE_SHEET_NAME = 'TapMineSheet';
+
 /** List of all the textures we need to load. */
 const SPRITE_DEFINITIONS: LoadSpriteInfo[] = [
     {
@@ -48,6 +51,16 @@ const SPRITE_DEFINITIONS: LoadSpriteInfo[] = [
         numSprites: 1,
         numAnimFrames: 4,
         animLength: 30,
+        animLoop: true,
+    },
+    {
+        name: TAP_MINE_SHEET_NAME,
+        textureUrl: TapMine,
+        width: TAPNOTE_WIDTH_PX,
+        height: TAPNOTE_HEIGHT_PX,
+        numSprites: 1,
+        numAnimFrames: 8,
+        animLength: 2,
         animLoop: true,
     },
 ];

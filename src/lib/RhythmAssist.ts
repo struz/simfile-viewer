@@ -55,7 +55,7 @@ export class RhythmAssist {
                 const secondsUntil = tickSecond - position.musicSeconds;
                 // TODO: if we implement music rate, /= secondsUntil by the music rate
                 // TODO: when playing the sound use the magic formulae to play in time
-                console.log(`clap @ beat=${tickBeat}`);
+                // console.log(`clap @ beat=${tickBeat}`);
                 this.clapSound.play();
             }
         }

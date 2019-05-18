@@ -4,8 +4,10 @@ import ArrowEffects from '../ArrowEffects';
 import NoteHelpers, { TapNoteType } from '../NoteTypes';
 import TapNoteSprite from './TapNoteSprite';
 import { laneIndexToDirection } from './EntitiesConstants';
-import SCREENMAN from '../ScreenManager';
+import TapMineSprite from './TapMineSprite';
 
+// The note tracks can hold any drawable note
+type DrawableNoteSprite = TapNoteSprite | TapMineSprite;
 
 /** The note field. Doesn't inherently draw anything itself
  *  but controls other entities which are drawn.
@@ -13,7 +15,7 @@ import SCREENMAN from '../ScreenManager';
 class NoteField extends Entity {
     // Eventually optimise this into a genericized vesion of TrackMap.
     // Map is keyed as noteRow=>TapNoteSprite
-    private noteTracks: Array<Map<number, TapNoteSprite>>;
+    private noteTracks: Array<Map<number, DrawableNoteSprite>>;
 
     constructor() {
         super();
@@ -141,7 +143,6 @@ class NoteField extends Entity {
         const PIXELS_TO_DRAW_OFFSCREEN = 1000;
         const firstBeatToDraw = this.findFirstDisplayedBeat(PIXELS_TO_DRAW_OFFSCREEN);
         const lastBeatToDraw = this.findLastDisplayedBeat(PIXELS_TO_DRAW_OFFSCREEN);
-        // console.log(`fbtd=${firstBeatToDraw}, lbtd=${lastBeatToDraw}`);
 
         const firstRow = NoteHelpers.beatToNoteRow(firstBeatToDraw);
         const lastRow = NoteHelpers.beatToNoteRow(lastBeatToDraw);
@@ -190,31 +191,49 @@ class NoteField extends Entity {
 
         // We use a direct loop here so we can access the data immediately but the abstraction
         // is lost. Build a generic version of this efficient abstraction somewhere.
-        // TODO: fix steps index below
+
+        // TODO: fix steps index below and replace with actual steps index when we have it later
         const nd = GAMESTATE.curSong.getSteps(0).getNoteData();
         for (let t = 0; t < nd.tapNotes.length; t++) {
             for (const tnEntry of nd.tapNotes[t]) {
                 // IMPORTANT: this array MUST be ordered or this continue/break logic won't work.
                 if (tnEntry[0] < firstRow) { continue; }
                 if (tnEntry[0] > lastRow) { break; }
-                if (tnEntry[1].type !== TapNoteType.Tap && tnEntry[1].type !== TapNoteType.HoldHead) { continue; }
+                if (tnEntry[1].type !== TapNoteType.Tap &&
+                    tnEntry[1].type !== TapNoteType.HoldHead &&
+                    tnEntry[1].type !== TapNoteType.Mine) { continue; }
 
                 // If we don't have the note already, create it
                 if (this.noteTracks[t].has(tnEntry[0])) { continue; }
 
                 const beat = NoteHelpers.noteRowToBeat(tnEntry[0]);
-                this.noteTracks[t].set(tnEntry[0], new TapNoteSprite(
-                    laneIndexToDirection(t),
-                    NoteHelpers.beatToNoteType(beat),
-                    beat,
-                ).addToStage());
+                let tnSprite: DrawableNoteSprite;
+                switch (tnEntry[1].type) {
+                    case TapNoteType.Tap:
+                    case TapNoteType.HoldHead:
+                        tnSprite = new TapNoteSprite(
+                            laneIndexToDirection(t),
+                            NoteHelpers.beatToNoteType(beat),
+                            beat,
+                        );
+                        break;
+                    case TapNoteType.Mine:
+                        tnSprite = new TapMineSprite(
+                            laneIndexToDirection(t),
+                            beat,
+                        );
+                        break;
+                    default:
+                        throw new Error(`Unprocessable TapNoteType encountered: ${tnEntry[1].type}`);
+                }
+                this.noteTracks[t].set(tnEntry[0], tnSprite.addToStage());
             }
         }
 
         // Clean up the notes that are out of range
         // We could do the cleanup in the same loop above but we might end up doing too many .has() lookups
         // Instead, do a separate loop
-        const toDestroy: Array<[number, TapNoteSprite, Map<number, TapNoteSprite>]> = [];
+        const toDestroy: Array<[number, DrawableNoteSprite, Map<number, DrawableNoteSprite>]> = [];
         for (const track of this.noteTracks) {
             for (const tnsEntry of track) {
                 if (tnsEntry[0] < firstRow || tnsEntry[0] > lastRow) {

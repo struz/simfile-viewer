@@ -21,7 +21,6 @@ class GameLoop {
         const deltaTime = gGameplayTimer.getDeltaTime();
         GameLoop.totalTime += deltaTime;
         if (GameLoop.totalTime > 1) {
-            // console.log(`fps = ${GameLoop.drawnFrames}`);
             GameLoop.totalTime = 0;
             GameLoop.drawnFrames = 0;
         }
