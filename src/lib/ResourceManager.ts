@@ -1,9 +1,22 @@
 import * as PIXI from 'pixi.js';
 
-import DownReceptor from '@/assets/noteskins/USWCelETT/_Down_Receptor_Go_4x1.png';
-import DownTapNote from '@/assets/noteskins/USWCelETT/_Down_Tap_Note_16x8.png';
 import { TAPNOTE_WIDTH_PX, TAPNOTE_HEIGHT_PX } from './entities/EntitiesConstants';
 import SCREENMAN from './ScreenManager';
+
+// Images used for sprites
+// Tap notes / receptors
+import DownReceptor from '@/assets/noteskins/USWCelETT/_Down_Receptor_Go_4x1.png';
+import DownTapNote from '@/assets/noteskins/USWCelETT/_Down_Tap_Note_16x8.png';
+// Holds
+import DownHoldBodyActive from '@/assets/noteskins/USWCelETT/Down_Hold_Body_Active.png';
+import DownHoldBodyInactive from '@/assets/noteskins/USWCelETT/Down_Hold_Body_Inactive.png';
+import DownHoldBottomCapActive from '@/assets/noteskins/USWCelETT/Down_Hold_BottomCap_active.png';
+import DownHoldBottomCapInactive from '@/assets/noteskins/USWCelETT/Down_Hold_BottomCap_inactive.png';
+// Rolls
+import DownRollBodyActive from '@/assets/noteskins/USWCelETT/_Down_Roll_Body_active_4x1.png';
+import DownRollBodyInactive from '@/assets/noteskins/USWCelETT/Down_Roll_Body_Inactive.png';
+import DownRollBottomCapActive from '@/assets/noteskins/USWCelETT/_Down_Roll_BottomCap_active_4x1.png';
+import DownRollBottomCapInactive from '@/assets/noteskins/USWCelETT/Down_Roll_BottomCap_Inactive.png';
 
 interface LoadSpriteInfo {
     name: string;
@@ -25,8 +38,15 @@ export interface GameSpriteInfo {
     textures: PIXI.Texture[][]; // sprites can have sub-sprites (i.e. all the arrow colours)
 }
 
+// Tap note resources
 export const DOWN_TAP_NOTE_SHEET_NAME = 'DownTapNoteSheet';
 export const DOWN_TAP_NOTE_RECEPTOR_SHEET_NAME = 'DownReceptorSheet';
+
+// Hold note resources
+export const DOWN_HOLD_BODY_ACTIVE_SHEET_NAME = 'DownHoldBodyActiveSheet';
+export const DOWN_HOLD_BODY_INACTIVE_SHEET_NAME = 'DownHoldBodyInactiveSheet';
+export const DOWN_HOLD_BOTTOM_CAP_ACTIVE_SHEET_NAME = 'DownHoldBottomCapActiveSheet';
+export const DOWN_HOLD_BOTTOM_CAP_INACTIVE_SHEET_NAME = 'DownHoldBottomCapInactiveSheet';
 
 /** List of all the textures we need to load. */
 const SPRITE_DEFINITIONS: LoadSpriteInfo[] = [
@@ -49,6 +69,47 @@ const SPRITE_DEFINITIONS: LoadSpriteInfo[] = [
         numAnimFrames: 4,
         animLength: 30,
         animLoop: true,
+    },
+    // Holds
+    {
+        name: DOWN_HOLD_BODY_ACTIVE_SHEET_NAME,
+        textureUrl: DownHoldBodyActive,
+        width: TAPNOTE_WIDTH_PX,
+        height: 128,
+        numSprites: 1,
+        numAnimFrames: 1,
+        animLength: 1,
+        animLoop: false,
+    },
+    {
+        name: DOWN_HOLD_BODY_INACTIVE_SHEET_NAME,
+        textureUrl: DownHoldBodyInactive,
+        width: TAPNOTE_WIDTH_PX,
+        height: 128,
+        numSprites: 1,
+        numAnimFrames: 1,
+        animLength: 1,
+        animLoop: false,
+    },
+    {
+        name: DOWN_HOLD_BOTTOM_CAP_ACTIVE_SHEET_NAME,
+        textureUrl: DownHoldBottomCapActive,
+        width: TAPNOTE_WIDTH_PX,
+        height: 32,
+        numSprites: 1,
+        numAnimFrames: 1,
+        animLength: 1,
+        animLoop: false,
+    },
+    {
+        name: DOWN_HOLD_BOTTOM_CAP_INACTIVE_SHEET_NAME,
+        textureUrl: DownHoldBottomCapInactive,
+        width: TAPNOTE_WIDTH_PX,
+        height: 32,
+        numSprites: 1,
+        numAnimFrames: 1,
+        animLength: 1,
+        animLoop: false,
     },
 ];
 

@@ -1,11 +1,5 @@
 import Entity from './Entity';
 
-interface ScreenManagerOptions {
-    renderCanvas: HTMLCanvasElement;
-    width: number;
-    height: number;
-}
-
 /** Responsible for managing all game entities. */
 export class EntityManager {
     // Singleton

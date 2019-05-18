@@ -1,20 +1,20 @@
 import * as PIXI from 'pixi.js';
-import RESOURCEMAN, { GameSpriteInfo } from '../ResourceManager';
+import { GameSpriteInfo } from '../ResourceManager';
 import SCREENMAN from '../ScreenManager';
-import Entity from './Entity';
+import Entity, { checkGameDependencies } from './Entity';
+import Drawable from './Drawable';
 
-// Abstract class to parent all sprite subsets
-abstract class GameSprite extends Entity {
-    public static checkDependencies() {
-        // We can't do anything if the resource manager isn't initialised
-        if (!RESOURCEMAN.isDoneLoading()) { throw new Error('RESOURCEMAN has not finished loading'); }
-    }
-
+// Base class to parent all sprite subsets
+// Is not an abstract class so that we can use it for basic drawing functionality
+// and in GameSpriteGroup.
+// TODO: make one level of abstraction up that is still abstract.
+class GameSprite extends Entity implements Drawable {
     protected sprite: PIXI.AnimatedSprite;
     protected spriteDef: GameSpriteInfo;
     protected onStage: boolean;
 
     public constructor(spriteInfo: GameSpriteInfo, spriteIndex = 0) {
+        checkGameDependencies();
         super();
 
         this.spriteDef = spriteInfo;
@@ -25,9 +25,9 @@ abstract class GameSprite extends Entity {
         this.sprite.anchor.x = 0.5;
         this.sprite.anchor.y = 0.5;
 
-        // Translate frames of animation into an animation speed modifier
         this.sprite.animationSpeed = 1 / this.spriteDef.animLength;
         this.sprite.loop = spriteInfo.animLoop;
+        this.sprite.play();
     }
 
     public destroy() {
@@ -36,7 +36,6 @@ abstract class GameSprite extends Entity {
     }
 
     public isOnStage() { return this.onStage; }
-    public getSprite() { return this.sprite; }
     public setPos(x: number, y: number) {
         this.sprite.x = x;
         this.sprite.y = y;
@@ -50,6 +49,9 @@ abstract class GameSprite extends Entity {
         this.sprite.y = y;
         return this;
     }
+    public getPos(): [number, number] {
+        return [this.sprite.x, this.sprite.y];
+    }
     public addToStage() {
         if (this.onStage) { return this; }
 
@@ -62,6 +64,24 @@ abstract class GameSprite extends Entity {
 
         this.onStage = false;
         SCREENMAN.getPixiApp().stage.removeChild(this.sprite);
+        return this;
+    }
+    public setVisibility(visible: boolean) {
+        this.sprite.visible = visible;
+        return this;
+    }
+
+    public update(deltaTime: number) {
+        // Does nothing, children MUST override this for any unique functionality
+        return this;
+    }
+
+    public play(): this {
+        this.sprite.play();
+        return this;
+    }
+    public stop(): this {
+        this.sprite.stop();
         return this;
     }
 }

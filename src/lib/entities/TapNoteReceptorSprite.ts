@@ -12,7 +12,6 @@ class TapNoteReceptorSprite extends GameSprite {
      * @param direction the direction the arrow should go in.
      */
     constructor(direction: TapNoteDirection) {
-        GameSprite.checkDependencies();
         super(RESOURCEMAN.getSpriteInfo(DOWN_TAP_NOTE_RECEPTOR_SHEET_NAME));
 
         this.direction = direction;
@@ -32,6 +31,7 @@ class TapNoteReceptorSprite extends GameSprite {
     public getDirection() { return this.direction; }
 
     public update(deltaTime: number) {
+        super.update(deltaTime);
         return this;
     }
 }

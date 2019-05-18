@@ -90,7 +90,7 @@ export class ScreenManager {
             }
         }
         for (const receptor of this.receptorSprites) {
-            receptor.getSprite().visible = true;
+            receptor.setVisibility(true);
         }
 
         // const secondBeat = 2;
@@ -106,7 +106,7 @@ export class ScreenManager {
     public hideReceptors() {
         if (!this.receptorsVisible || this.receptorSprites.length === 0) { return; }
         for (const receptor of this.receptorSprites) {
-            receptor.getSprite().visible = false;
+            receptor.setVisibility(false);
         }
         this.receptorsVisible = false;
     }

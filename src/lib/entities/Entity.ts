@@ -1,5 +1,11 @@
 import ENTITYMAN from './EntityManager';
-import NoteField from './NoteField';
+import RESOURCEMAN from '../ResourceManager';
+
+// For entity subclasses that need to load resources
+export function checkGameDependencies() {
+    // We can't do anything if the resource manager isn't initialised
+    if (!RESOURCEMAN.isDoneLoading()) { throw new Error('RESOURCEMAN has not finished loading'); }
+}
 
 // The base class for all game entities
 abstract class Entity {

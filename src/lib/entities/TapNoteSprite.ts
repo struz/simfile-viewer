@@ -16,9 +16,9 @@ class TapNoteSprite extends GameSprite {
     /** Create a new tap note sprite.
      * @param direction the direction the arrow should go in.
      * @param noteType the type of note (4th, 16th, etc).
+     * @param noteBeat the beat the note falls on.
      */
     constructor(direction: TapNoteDirection, noteType: NoteType, noteBeat: number) {
-        GameSprite.checkDependencies();
         super(RESOURCEMAN.getSpriteInfo(DOWN_TAP_NOTE_SHEET_NAME), noteType);
 
         this.direction = direction;
@@ -55,6 +55,7 @@ class TapNoteSprite extends GameSprite {
         // const movement = 3 * (deltaTime * 60);
         // this.sprite.y += movement;
         // this.sprite.y = 400; // TODO: base this off the beat the note is on so we can just create notes @ beats
+        super.update(deltaTime);
         this.setYPosBasedOnBeat();
         return this;
     }

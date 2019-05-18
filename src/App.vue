@@ -115,6 +115,7 @@ const AppComponent = Vue.extend({
         playing = true;
 
         // TODO: IMPORTANT: write functions to ensure that a Song is loaded before we play the Music
+        // Just check .status()
         // See PlayMusic() in C++ for an example.
         GAMESTATE.loadNextSong(song);
         GAMESTATE.play(); // ensure song timer is running
