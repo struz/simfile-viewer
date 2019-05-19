@@ -60,7 +60,7 @@ const SPRITE_DEFINITIONS: LoadSpriteInfo[] = [
         height: TAPNOTE_HEIGHT_PX,
         numSprites: 1,
         numAnimFrames: 8,
-        animLength: 2,
+        animLength: 3,
         animLoop: true,
     },
 ];

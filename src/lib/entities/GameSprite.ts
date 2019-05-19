@@ -21,6 +21,8 @@ abstract class GameSprite extends Entity {
         this.sprite = new PIXI.AnimatedSprite(this.spriteDef.textures[spriteIndex]);
         this.onStage = false;
 
+        this.sprite.zIndex = 0;  // be explicit
+
         // Anchor rotation around the center point
         this.sprite.anchor.x = 0.5;
         this.sprite.anchor.y = 0.5;
@@ -62,6 +64,11 @@ abstract class GameSprite extends Entity {
 
         this.onStage = false;
         SCREENMAN.getPixiApp().stage.removeChild(this.sprite);
+        return this;
+    }
+
+    public setZIndex(z: number) {
+        this.sprite.zIndex = z;
         return this;
     }
 }

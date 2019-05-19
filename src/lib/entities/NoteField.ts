@@ -226,7 +226,7 @@ class NoteField extends Entity {
                     default:
                         throw new Error(`Unprocessable TapNoteType encountered: ${tnEntry[1].type}`);
                 }
-                this.noteTracks[t].set(tnEntry[0], tnSprite.addToStage());
+                this.noteTracks[t].set(tnEntry[0], tnSprite.setZIndex(-tnEntry[0]).addToStage());
             }
         }
 

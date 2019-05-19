@@ -50,12 +50,13 @@ export class ScreenManager {
             view: options.renderCanvas,
             backgroundColor: 0x000000,
         });
+        // TODO: switch this to using pixi-display for performance
+        // Uncomment next line to reverse Z ordering if desired
+        // this.pixiApp.stage.sortableChildren = true;
         // Tell the resource manager it can load things now
         RESOURCEMAN.loadSprites();
         // Start the tick loop for animations and other such things
         this.pixiApp.ticker.maxFPS = ScreenManager.desiredFps();
-        // Disabled because our logic just stacks up animation frames since it's search-heavy
-        // this.pixiApp.ticker.add(GameLoop.gameLoop);
         this.pixiApp.ticker.start();
     }
 
