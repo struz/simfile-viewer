@@ -1,12 +1,13 @@
 import { TapNoteDirection, TAPNOTE_WIDTH_PX, LANE_MARGIN, directionToLaneIndex } from './EntitiesConstants';
 import RESOURCEMAN, { TAP_MINE_SHEET_NAME } from '../ResourceManager';
-import GameSprite from './GameSprite';
+import AnimatedGameSprite from './AnimatedGameSprite';
 import ArrowEffects from '../ArrowEffects';
 import { RECEPTOR_MARGIN_TOP_PX } from './TapNoteReceptorSprite';
+import GameSprite from './GameSprite';
 
 const NOTESKIN = 'USWCelETT';
 
-class TapMineSprite extends GameSprite {
+class TapMineSprite extends AnimatedGameSprite {
     private direction: TapNoteDirection;  // Used for x position
     private noteBeat: number;
 

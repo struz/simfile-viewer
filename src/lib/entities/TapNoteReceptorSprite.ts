@@ -1,11 +1,11 @@
-import TapNoteSprite from './TapNoteSprite';
-import GameSprite from './GameSprite';
+import AnimatedGameSprite from './AnimatedGameSprite';
 import RESOURCEMAN, { DOWN_TAP_NOTE_RECEPTOR_SHEET_NAME } from '../ResourceManager';
 import { TapNoteDirection, directionToLaneIndex, LANE_MARGIN, TAPNOTE_WIDTH_PX } from './EntitiesConstants';
+import GameSprite from './GameSprite';
 
 export const RECEPTOR_MARGIN_TOP_PX = 32;
 
-class TapNoteReceptorSprite extends GameSprite {
+class TapNoteReceptorSprite extends AnimatedGameSprite {
     private direction: TapNoteDirection;
 
     /** Create a new tap note receptor sprite.

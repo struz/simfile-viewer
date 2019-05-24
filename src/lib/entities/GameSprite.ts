@@ -10,15 +10,13 @@ abstract class GameSprite extends Entity {
         if (!RESOURCEMAN.isDoneLoading()) { throw new Error('RESOURCEMAN has not finished loading'); }
     }
 
-    protected sprite: PIXI.AnimatedSprite;
-    protected spriteDef: GameSpriteInfo;
+    protected sprite: PIXI.Sprite;
     protected onStage: boolean;
 
-    public constructor(spriteInfo: GameSpriteInfo, spriteIndex = 0) {
+    public constructor(sprite: PIXI.Sprite) {
         super();
 
-        this.spriteDef = spriteInfo;
-        this.sprite = new PIXI.AnimatedSprite(this.spriteDef.textures[spriteIndex]);
+        this.sprite = sprite;
         this.onStage = false;
 
         this.sprite.zIndex = 0;  // be explicit
@@ -26,10 +24,6 @@ abstract class GameSprite extends Entity {
         // Anchor rotation around the center point
         this.sprite.anchor.x = 0.5;
         this.sprite.anchor.y = 0.5;
-
-        // Translate frames of animation into an animation speed modifier
-        this.sprite.animationSpeed = 1 / this.spriteDef.animLength;
-        this.sprite.loop = spriteInfo.animLoop;
     }
 
     public destroy() {
