@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { TAPNOTE_WIDTH_PX, TAPNOTE_HEIGHT_PX } from './entities/EntitiesConstants';
+import { TAPNOTE_WIDTH_PX, TAPNOTE_HEIGHT_PX, HOLD_BOTTOM_CAP_HEIGHT_PX } from './entities/EntitiesConstants';
 import SCREENMAN from './ScreenManager';
 
 // Images used for sprites
@@ -107,7 +107,7 @@ const SPRITE_DEFINITIONS: LoadSpriteInfo[] = [
         name: DOWN_HOLD_BOTTOM_CAP_ACTIVE_SHEET_NAME,
         textureUrl: DownHoldBottomCapActive,
         width: TAPNOTE_WIDTH_PX,
-        height: 32,
+        height: HOLD_BOTTOM_CAP_HEIGHT_PX,
         numSprites: 1,
         numAnimFrames: 1,
         animLength: 1,
@@ -117,7 +117,7 @@ const SPRITE_DEFINITIONS: LoadSpriteInfo[] = [
         name: DOWN_HOLD_BOTTOM_CAP_INACTIVE_SHEET_NAME,
         textureUrl: DownHoldBottomCapInactive,
         width: TAPNOTE_WIDTH_PX,
-        height: 32,
+        height: HOLD_BOTTOM_CAP_HEIGHT_PX,
         numSprites: 1,
         numAnimFrames: 1,
         animLength: 1,

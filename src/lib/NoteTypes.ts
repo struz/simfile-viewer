@@ -90,6 +90,7 @@ export class TapNote {
     // ommitted keySoundIndex as we don't support keysounds
 
     // also used for HoldHead only;
+    /** The duration of the hold in note rows. */
     public duration: number = 0;
     public holdResult: HoldNoteResult = new HoldNoteResult();
 

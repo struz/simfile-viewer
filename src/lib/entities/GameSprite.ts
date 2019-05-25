@@ -3,8 +3,16 @@ import RESOURCEMAN, { GameSpriteInfo } from '../ResourceManager';
 import SCREENMAN from '../ScreenManager';
 import Entity from './Entity';
 
-// Abstract class to parent all sprite subsets
-abstract class GameSprite extends Entity {
+/** Interface that describes anything that is drawable, including groups of sprites. */
+export interface Drawable {
+    addToStage(): this;
+    removeFromStage(): this;
+    isOnStage(): boolean;
+    destroy(): void;
+}
+
+// Class to parent all sprite subsets
+class GameSprite extends Entity implements Drawable {
     public static checkDependencies() {
         // We can't do anything if the resource manager isn't initialised
         if (!RESOURCEMAN.isDoneLoading()) { throw new Error('RESOURCEMAN has not finished loading'); }
@@ -63,6 +71,11 @@ abstract class GameSprite extends Entity {
 
     public setZIndex(z: number) {
         this.sprite.zIndex = z;
+        return this;
+    }
+
+    public update(deltaTime: number): this {
+        // Basic sprite does nothing
         return this;
     }
 }

@@ -5,17 +5,32 @@ import NoteHelpers, { TapNoteType } from '../NoteTypes';
 import TapNoteSprite from './TapNoteSprite';
 import { laneIndexToDirection } from './EntitiesConstants';
 import TapMineSprite from './TapMineSprite';
+import GameSprite, { Drawable } from './GameSprite';
+import HoldTailSprite from './HoldTailSprite';
 
 // The note tracks can hold any drawable note
-type DrawableNoteSprite = TapNoteSprite | TapMineSprite;
+type DrawableNoteSprite = Drawable;
+
+class NoteTrackData {
+    /** The tap notes and the note rows they land on. */
+    public tapNotes: Map<number, DrawableNoteSprite>;
+    /** The end points of holds. Required so we can cull holds when they end. */
+    public holdCaps: Map<number, DrawableNoteSprite>;
+
+    constructor() {
+        this.tapNotes = new Map();
+        this.holdCaps = new Map();
+    }
+}
 
 /** The note field. Doesn't inherently draw anything itself
  *  but controls other entities which are drawn.
  */
 class NoteField extends Entity {
-    // Eventually optimise this into a genericized vesion of TrackMap.
+    // TODO: Eventually optimise this into a genericized vesion of TrackMap.
     // Map is keyed as noteRow=>TapNoteSprite
-    private noteTracks: Array<Map<number, DrawableNoteSprite>>;
+    /** One map of note rows to the sprites they draw for each note track. */
+    private noteTracks: NoteTrackData[];
 
     constructor() {
         super();
@@ -26,7 +41,10 @@ class NoteField extends Entity {
     public resetTracks(numTracks: number) {
         // Cleanup any old notes
         for (const track of this.noteTracks) {
-            for (const tn of track) {
+            for (const tn of track.tapNotes) {
+                tn[1].destroy();
+            }
+            for (const tn of track.holdCaps) {
                 tn[1].destroy();
             }
         }
@@ -34,7 +52,7 @@ class NoteField extends Entity {
         // Reset the tracks
         this.noteTracks = [];
         for (let i = 0; i < numTracks; i++) {
-            this.noteTracks.push(new Map());
+            this.noteTracks.push(new NoteTrackData());
         }
     }
 
@@ -204,29 +222,42 @@ class NoteField extends Entity {
                     tnEntry[1].type !== TapNoteType.Mine) { continue; }
 
                 // If we don't have the note already, create it
-                if (this.noteTracks[t].has(tnEntry[0])) { continue; }
+                if (this.noteTracks[t].tapNotes.has(tnEntry[0])) { continue; }
 
                 const beat = NoteHelpers.noteRowToBeat(tnEntry[0]);
-                let tnSprite: DrawableNoteSprite;
+                const direction = laneIndexToDirection(t);
+                let tnSprite: GameSprite;
                 switch (tnEntry[1].type) {
                     case TapNoteType.Tap:
+                        tnSprite = new TapNoteSprite(
+                            direction,
+                            beat,
+                        );
+                        break;
                     case TapNoteType.HoldHead:
                         tnSprite = new TapNoteSprite(
-                            laneIndexToDirection(t),
-                            NoteHelpers.beatToNoteType(beat),
+                            direction,
                             beat,
+                        );
+                        this.noteTracks[t].holdCaps.set(
+                            tnEntry[0],
+                            new HoldTailSprite(
+                                direction,
+                                beat,
+                                NoteHelpers.noteRowToBeat(tnEntry[1].duration),
+                            ).addToStage(),
                         );
                         break;
                     case TapNoteType.Mine:
                         tnSprite = new TapMineSprite(
-                            laneIndexToDirection(t),
+                            direction,
                             beat,
                         );
                         break;
                     default:
                         throw new Error(`Unprocessable TapNoteType encountered: ${tnEntry[1].type}`);
                 }
-                this.noteTracks[t].set(tnEntry[0], tnSprite.setZIndex(-tnEntry[0]).addToStage());
+                this.noteTracks[t].tapNotes.set(tnEntry[0], tnSprite.setZIndex(-tnEntry[0]).addToStage());
             }
         }
 
@@ -235,12 +266,18 @@ class NoteField extends Entity {
         // Instead, do a separate loop
         const toDestroy: Array<[number, DrawableNoteSprite, Map<number, DrawableNoteSprite>]> = [];
         for (const track of this.noteTracks) {
-            for (const tnsEntry of track) {
+            for (const tnsEntry of track.tapNotes) {
                 if (tnsEntry[0] < firstRow || tnsEntry[0] > lastRow) {
                     // The sprite is out of our valid window for management, destroy it
                     // Avoid doing it in here in case it changes the internals and ruins
                     // iteration.
-                    toDestroy.push([tnsEntry[0], tnsEntry[1], track]);
+                    toDestroy.push([tnsEntry[0], tnsEntry[1], track.tapNotes]);
+                }
+            }
+            for (const tnsEntry of track.holdCaps) {
+                // We only cull holds based on their end since the start note is often off-screen
+                if (tnsEntry[0] > lastRow) {
+                    toDestroy.push([tnsEntry[0], tnsEntry[1], track.holdCaps]);
                 }
             }
         }

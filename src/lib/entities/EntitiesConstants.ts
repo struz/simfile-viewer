@@ -2,6 +2,8 @@
 export const TAPNOTE_WIDTH_PX = 64;
 /** The height of a tap note sprite before any scaling. */
 export const TAPNOTE_HEIGHT_PX = 64;
+/** The height of a hold note bottom cap before any scaling. */
+export const HOLD_BOTTOM_CAP_HEIGHT_PX = 32;
 
 /** Tap note directions in rotation order from the down arrow. */
 export enum TapNoteDirection {

@@ -2,8 +2,8 @@ import * as PIXI from 'pixi.js';
 import { GameSpriteInfo } from '../ResourceManager';
 import GameSprite from './GameSprite';
 
-// Abstract class to parent all sprite subsets
-abstract class AnimatedGameSprite extends GameSprite {
+// Class representing all sprites that are animated
+class AnimatedGameSprite extends GameSprite {
     protected sprite: PIXI.AnimatedSprite;
 
     public constructor(spriteInfo: GameSpriteInfo, spriteIndex = 0) {
