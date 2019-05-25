@@ -68,6 +68,12 @@ class HoldTailSprite extends Entity implements Drawable {
         // we need to take this into account to make sure it lines up with the hold cap
         // which is anchored in the middle (not the top).
         bodySprite.height = this.height - (HOLD_BOTTOM_CAP_HEIGHT_PX / 2);
+        // TODO: my guess is that the code makes sure that the light portion at the end
+        // of the repeating hold body texture always lines up with the light ending.
+        // It probably repeats as necessary then squishes part of it so it'll always fit.
+        // Investigate so that we can have nice looking holds.
+        // Line 792 in NoteDisplay.cpp maybe? - yeah it uses a SCALE() call and shrinks the
+        // texture Y before tiling it so that it looks nice.
 
         this.updateSprites();
     }

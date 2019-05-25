@@ -1,8 +1,6 @@
 // tslint:disable: max-line-length
 
-interface GameEnum {
-    NUM: number;
-}
+export const EXPECTED_FPS = 60;
 
 // The different game categories available to play.
 // Taken from commit b95e49216eb2974b8e0f69b6603595df1c698ccd

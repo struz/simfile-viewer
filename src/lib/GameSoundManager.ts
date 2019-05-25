@@ -2,11 +2,13 @@ import GAMESTATE from './GameState';
 import NoteHelpers, { ROWS_PER_BEAT } from './NoteTypes';
 import TimingData from './TimingData';
 import { BPMSegment } from './TimingSegments';
+import { EXPECTED_FPS } from './GameConstantsAndTypes';
+import { DebugTools } from './Debug';
 
 /** The amount of time in seconds that is allowable to drift from
  * the playing music.
  */
-const MAX_TOLERATED_DRIFT_SECS = (1 / 60) * 2; // 2 frames @ 60fps
+const MAX_TOLERATED_DRIFT_SECS = (1 / EXPECTED_FPS) * 2; // 2 frames @ 60fps
 const DRIFT_SECS_BEFORE_UPDATE = 1;
 
 export class MusicPlaying {
@@ -75,6 +77,39 @@ export class GameSoundManager {
     // Private constructor for singleton pattern
     private constructor() {
         // Nothing to do here
+    }
+
+    public pauseMusic() {
+        if (this.musicPlaying !== undefined) {
+            this.musicPlaying.music.pause();
+        }
+    }
+
+    public resumeMusic() {
+        if (this.musicPlaying !== undefined) {
+            this.musicPlaying.music.play();
+        }
+    }
+
+    public musicSkipforwards(seekTimeSeconds: number) {
+        if (this.musicPlaying !== undefined) {
+            const currentTimeSeconds = this.musicPlaying.music.seek() as number;
+            this.musicPlaying.music.seek(currentTimeSeconds + seekTimeSeconds);
+        }
+    }
+
+    public getMusicTimeSeconds() {
+        if (this.musicPlaying !== undefined) {
+            return this.musicPlaying.music.seek() as number;
+        }
+        return 0;
+    }
+
+    public getMusicTiming() {
+        if (this.musicPlaying !== undefined) {
+            return this.musicPlaying.timing;
+        }
+        return new TimingData();
     }
 
     public startMusic(toPlay: MusicToPlay) {
@@ -173,6 +208,7 @@ export class GameSoundManager {
                 // Always sync to the music rather than the other way around. It's less jarring.
                 GAMESTATE.updateSongPosition(musicPlayingPosSeconds, this.musicPlaying.timing);
                 console.log('resynced song to music');
+                // DebugTools.PAUSE();
             }
         } else {
             this.outOfSyncSecs = 0;

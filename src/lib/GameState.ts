@@ -100,12 +100,14 @@ export class GameState {
     public setCurSong(newSong: Song | undefined) {
         if (this.curSong !== undefined) {
             // TODO: release lookup data for the old song
+            this.curSong.songTiming.releaseLookup();
         }
         console.log('changed song!');
         this.curSong = newSong;
         // TODO: broadcast song has changed.
         if (this.curSong !== undefined) {
             // TODO: request lookup data for the new song
+            this.curSong.songTiming.prepareLookup();
         }
     }
 
@@ -183,9 +185,9 @@ export class GameState {
                 this.playerState[pn].position.songBeatNoOffset);
         }
         this.setBgmTime(GAMESTATE.position.musicSecondsVisible,
-            GameState.getInstance().position.songBeatVisible,
+            this.position.songBeatVisible,
             positionSeconds,
-            GameState.getInstance().position.songBeatNoOffset);
+            this.position.songBeatNoOffset);
     }
 }
 const GAMESTATE = GameState.getInstance();

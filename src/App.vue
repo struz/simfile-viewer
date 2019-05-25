@@ -56,6 +56,7 @@ import MsdFile from '@/lib/MsdFile';
 import NoteLoaderSM from '@/lib/NoteLoaderSM';
 import Song from '@/lib/Song';
 import SOUNDMAN, { MusicToPlay } from '@/lib/GameSoundManager';
+import { DebugTools } from '@/lib/Debug';
 
 // Load SM file
 let song = new Song();
@@ -94,6 +95,7 @@ let playing = false;
 declare global {
   interface Window {
     howl: any;
+    debugTools: any;
   }
 }
 window.howl = bigSkyMusic;
@@ -125,6 +127,7 @@ const AppComponent = Vue.extend({
         toPlay.timing = song.songTiming;
         toPlay.startSeconds = this.$data.seek;
         SOUNDMAN.startMusic(toPlay);
+        window.debugTools = DebugTools;
       }
     },
     seekTrack() {

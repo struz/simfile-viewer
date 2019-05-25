@@ -354,10 +354,7 @@ export class TimingData {
         const delays = segs[TimingSegmentType.DELAY];
 
         const totalSegments = bpms.length + warps.length + stops.length + delays.length;
-        const lookupEntries = Math.trunc(totalSegments / segmentsPerLookup); // int
         // extend the arrays with 'undefined' entries
-        this.beatStartLookup.length = lookupEntries;
-        this.timeStartLookup.length = lookupEntries;
         for (let curSegment = segmentsPerLookup; curSegment < totalSegments; curSegment += segmentsPerLookup) {
             const beatStart = new GetBeatStarts();
             beatStart.lastTime = -this.beat0OffsetInSecs;
@@ -555,6 +552,7 @@ export class TimingData {
             // TODO: make sure this shallow copy actually works for all delay types
             const cpy = Object.assign(Object.create(Object.getPrototypeOf(seg)), seg);
             segs.push(cpy);
+            return;
         }
 
         const index = this.getSegmentIndexAtRow(tst, seg.getRow());
@@ -784,7 +782,8 @@ export class TimingData {
         start.lastTime = -this.beat0OffsetInSecs;
         const lookedUpStart = TimingData.findEntryInLookup(this.timeStartLookup, beat);
         if (lookedUpStart !== undefined) {
-            start = lookedUpStart[1];
+            // Make sure to use a copy so we don't modify it again and again in getBeatInternal()
+            start = Object.assign(Object.create(Object.getPrototypeOf(lookedUpStart[1])), lookedUpStart[1]);
         }
         this.getElapsedTimeInternal(start, beat, Number.MAX_SAFE_INTEGER);
         return start.lastTime;
@@ -805,7 +804,8 @@ export class TimingData {
         start.lastTime = -this.beat0OffsetInSecs;
         const lookedUpStart = TimingData.findEntryInLookup(this.beatStartLookup, args.elapsedTime);
         if (lookedUpStart !== undefined) {
-            start = lookedUpStart[1];
+            // Make sure to use a copy so we don't modify it again and again in getBeatInternal()
+            start = Object.assign(Object.create(Object.getPrototypeOf(lookedUpStart[1])), lookedUpStart[1]);
         }
         this.getBeatInternal(start, args, Number.MAX_SAFE_INTEGER);
     }
