@@ -41,12 +41,14 @@ class HoldTailSprite extends Entity implements Drawable {
         this.duration = duration;
         this.onStage = false;
 
+        // Get sprite info
         const bodySpriteInfo = RESOURCEMAN.getSpriteInfo(DOWN_HOLD_BODY_INACTIVE_SHEET_NAME);
+        const capSpriteInfo = RESOURCEMAN.getSpriteInfo(DOWN_HOLD_BOTTOM_CAP_INACTIVE_SHEET_NAME);
+
         const bodySprite = new PIXI.TilingSprite(bodySpriteInfo.textures[0][0],
             bodySpriteInfo.width, bodySpriteInfo.height);
         this.bodySprite = new GameSprite(bodySprite);
 
-        const capSpriteInfo = RESOURCEMAN.getSpriteInfo(DOWN_HOLD_BOTTOM_CAP_INACTIVE_SHEET_NAME);
         const bottomCapSprite = new PIXI.Sprite(capSpriteInfo.textures[0][0]);
         this.bottomCapSprite = new GameSprite(bottomCapSprite);
 
@@ -58,22 +60,21 @@ class HoldTailSprite extends Entity implements Drawable {
         bodySprite.x = laneX;
         bottomCapSprite.x = laneX;
 
-        // Anchor to the top of the body sprite so we can position it properly
-        // no matter how tall it is.
-        bodySprite.anchor.y = 0;
-
         // Set the height of the hold
         this.height = this.calculateHoldHeight();
         // Because we anchor to the very top of the hold body as it can be of arbitrary length,
         // we need to take this into account to make sure it lines up with the hold cap
         // which is anchored in the middle (not the top).
         bodySprite.height = this.height - (HOLD_BOTTOM_CAP_HEIGHT_PX / 2);
-        // TODO: my guess is that the code makes sure that the light portion at the end
-        // of the repeating hold body texture always lines up with the light ending.
-        // It probably repeats as necessary then squishes part of it so it'll always fit.
-        // Investigate so that we can have nice looking holds.
-        // Line 792 in NoteDisplay.cpp maybe? - yeah it uses a SCALE() call and shrinks the
-        // texture Y before tiling it so that it looks nice.
+
+        // In order to make sure the bottom colour of the hold body lines up with the
+        // colour of the hold cap we want to draw the texture from the bottom to the top.
+        // To achieve this in PIXI we use a negative scaling of 100%. To make that draw
+        // correctly it also needs to be anchored at 100% y.
+        bodySprite.anchor.y = 1;
+        bodySprite.scale.x = -1;
+        bodySprite.scale.y = -1;
+        // TODO: we may also need to flip the cap, graphics seem to line up better that way
 
         this.updateSprites();
     }
