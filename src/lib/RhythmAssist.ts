@@ -1,5 +1,5 @@
 import NoteHelpers from './NoteTypes';
-import GAMESTATE, { GameState } from './GameState';
+import GAMESTATE from './GameState';
 import { FOREACH_NONEMPTY_ROW_ALL_TRACKS_RANGE } from './NoteData';
 import { Howl } from 'howler';
 import clapOgg from '../assets/sounds/assist_clap.ogg';
@@ -8,7 +8,7 @@ export class RhythmAssist {
     public static rowLastCrossed = -1;
     public static clapSound = new Howl({
         src: [clapOgg],
-        volume: 0.4,  // TODO: make this a setting
+        volume: 0.6,  // TODO: make this a setting
     });
 
     public static playTicks() {

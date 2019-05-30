@@ -4,6 +4,7 @@ import TimingData from './TimingData';
 import { BPMSegment } from './TimingSegments';
 import { EXPECTED_FPS } from './GameConstantsAndTypes';
 import { DebugTools } from './Debug';
+import SongSound from './SongSound';
 
 /** The amount of time in seconds that is allowable to drift from
  * the playing music.
@@ -12,7 +13,7 @@ const MAX_TOLERATED_DRIFT_SECS = (1 / EXPECTED_FPS) * 2; // 2 frames @ 60fps
 const DRIFT_SECS_BEFORE_UPDATE = 1;
 
 export class MusicPlaying {
-    public music: Howl;
+    public music: SongSound;
     public timing: TimingData;
 
     public hasTiming = false;
@@ -20,11 +21,9 @@ export class MusicPlaying {
 
     // Anything else we need to sync up things
 
-    constructor(music: Howl) {
-        this.music = music;
-
-        this.timing = new TimingData();
-        this.timing.addSegment(new BPMSegment(0, 120));
+    constructor(music: Howl, timing: TimingData) {
+        this.music = new SongSound(music);
+        this.timing = timing;
     }
 
     public hasMusic() {
@@ -93,14 +92,14 @@ export class GameSoundManager {
 
     public musicSkipforwards(seekTimeSeconds: number) {
         if (this.musicPlaying !== undefined) {
-            const currentTimeSeconds = this.musicPlaying.music.seek() as number;
+            const currentTimeSeconds = this.musicPlaying.music.getTimeElapsed();
             this.musicPlaying.music.seek(currentTimeSeconds + seekTimeSeconds);
         }
     }
 
     public getMusicTimeSeconds() {
         if (this.musicPlaying !== undefined) {
-            return this.musicPlaying.music.seek() as number;
+            return this.musicPlaying.music.getTimeElapsed();
         }
         return 0;
     }
@@ -119,12 +118,11 @@ export class GameSoundManager {
         if (toPlay.music === undefined || toPlay.music.state() !== 'loaded') {
             throw new Error('toPlay.music must be provided and loaded');
         }
-        const newMusic = new MusicPlaying(toPlay.music);
-
         if (toPlay.timing === undefined) { throw new Error('toPlay.timing must be provided'); }
-        newMusic.timing = toPlay.timing;
+        const newMusic = new MusicPlaying(toPlay.music, toPlay.timing);
 
         // Omitted loop stuff from StepMania for now - we will need this eventually -Struz
+        // Currently stuff like 24h crapyard scent streams won't render
 
         // If we have an active timer try to start on the next update. Otherwise, start now.
         // TODO ^
@@ -136,8 +134,9 @@ export class GameSoundManager {
         // TODO: support start times in the future which would be buffered with silence aka not playing.
         //       see RageSoundDriver_Generic_Software.cpp:88
         if (toPlay.forceLoop) {
-            newMusic.music.loop(true);
+            newMusic.music.getSound().loop(true);
         }
+
         newMusic.music.play();
         this.musicPlaying = newMusic;
     }
@@ -192,11 +191,11 @@ export class GameSoundManager {
         // If we don't have anything to sync, bail out
         if (GAMESTATE.curSong === undefined || this.musicPlaying === undefined) { return; }
         // If the music isn't playing and we don't want to update if it's not playing, bail out
-        if (!this.musicPlaying.music.playing() && !updateIfMusicNotPlaying) { return; }
+        if (!this.musicPlaying.music.getSound().playing() && !updateIfMusicNotPlaying) { return; }
 
         // TODO: work out if we should be using visible or regular here. I say regular because
         // we do modifications on that to work out what to show with global offset etc etc -Struz
-        const musicPlayingPosSeconds = this.musicPlaying.music.seek() as number;
+        const musicPlayingPosSeconds = this.musicPlaying.music.getTimeElapsed();
         const drift = Math.abs(musicPlayingPosSeconds - GAMESTATE.position.musicSeconds);
         if (drift > MAX_TOLERATED_DRIFT_SECS) {
             // console.log(`drifted: ${drift * 1000}ms`);

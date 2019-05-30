@@ -151,7 +151,9 @@ class BodyAndCapNote extends Entity implements Drawable {
         const capYPos = ArrowEffects.getYOffset(
             this.noteBeat + this.duration,
             peakYOffset, isPastPeakOut) + RECEPTOR_MARGIN_TOP_PX;
-        return capYPos - headYPos;
+        // Because we anchor to the top of the bottom cap we need to subtract half the height
+        // to get it to line up with where it should be placed.
+        return capYPos - headYPos - (HOLD_BOTTOM_CAP_HEIGHT_PX / 2);
     }
 
     private updateSprites() {
@@ -161,12 +163,6 @@ class BodyAndCapNote extends Entity implements Drawable {
         // and we want it synced to the receptors.
         const headYPos = ArrowEffects.getYOffset(
             this.noteBeat, peakYOffset, isPastPeakOut) + RECEPTOR_MARGIN_TOP_PX;
-
-        // If applicable, update the tiling portion of the long note
-        // TODO: this is going to require a hell of a lot more thought because we can't
-        // start the tiling sprite midway through. So what we actually need is the tiling
-        // sprite at the bottom and the body at the top, so we get thru a full tile based
-        // on our maths.
 
         // Add the non tiling part of the sprite directly at the top
         const bodySprite = this.bodySprite.getSprite();

@@ -20,7 +20,11 @@ class TapNoteSprite extends AnimatedGameSprite {
      */
     constructor(direction: TapNoteDirection, noteBeat: number) {
         GameSprite.checkDependencies();
-        const noteType = NoteHelpers.beatToNoteType(noteBeat);
+        let noteType = NoteHelpers.beatToNoteType(noteBeat);
+        if (noteType === NoteType.N_192ND) {
+            // 192nd notes use the same sprite as 64th notes anyway
+            noteType = NoteType.N_64TH;
+        }
         super(RESOURCEMAN.getSpriteInfo(DOWN_TAP_NOTE_SHEET_NAME), noteType);
 
         this.direction = direction;
