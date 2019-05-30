@@ -1,12 +1,13 @@
 import Entity from './Entity';
 import GAMESTATE from '../GameState';
 import ArrowEffects from '../ArrowEffects';
-import NoteHelpers, { TapNoteType } from '../NoteTypes';
+import NoteHelpers, { TapNoteType, TapNoteSubType } from '../NoteTypes';
 import TapNoteSprite from './TapNoteSprite';
 import { laneIndexToDirection } from './EntitiesConstants';
 import TapMineSprite from './TapMineSprite';
 import GameSprite, { Drawable } from './GameSprite';
 import HoldTailSprite from './HoldTailSprite';
+import RollTailSprite from './RollTailSprite';
 
 // The note tracks can hold any drawable note
 type DrawableNoteSprite = Drawable;
@@ -167,46 +168,6 @@ class NoteField extends Entity {
 
         // TODO: draw beat bars?
 
-        // for each column
-        // - build lists of holds and taps and compare them against what we've got as entities already
-        // - repurpose any entities that are outside the first and last beat to draw
-
-        // grand vision: each note is self updating, we just have to manage their lifecycle here
-
-        // if we calculate the first and last beats on screen then we cull anything outside that
-        // beat range in our existing, and add new ones lower down.
-
-        // we want to avoid over iterating so maybe iterate over the note data
-
-
-
-        // SO: they use the Y coords for how far away to put things. We could probably simplify it
-        // by just using a grid, but give it a try first.
-
-
-
-        // The C++ code uses a const iterator here. Performance? -Struz
-        // What it does is set the start and end iterators to the range it wants to iterate over
-
-        // the gist below is: for each note detect whether it's between the first and last beats
-        // to draw. IF IT IS draw it.
-        // the real mvp here would be to:
-        // - assume note data won't change mid song and keep an iterator to it between calls
-        // - work out how many noteRow boundaries we've crossed since the last update
-        // - check all those note rows for tap notes and create the sprites
-        // ^ the above would need an initialise that looks ahead a certain amount
-        // caveats:
-        // - warps wouldn't play nicely and would need special logic?
-        // fixes:
-        // - could check all the
-
-        // another way:
-        // get the row of the current beat, that's anchored on the receptors.
-        // adjust every arrow relative to that every frame
-
-        // the way the game does it:
-        // FILLMEOUT
-
         // We use a direct loop here so we can access the data immediately but the abstraction
         // is lost. Build a generic version of this efficient abstraction somewhere.
 
@@ -234,20 +195,29 @@ class NoteField extends Entity {
                             beat,
                         );
                         break;
+
                     case TapNoteType.HoldHead:
                         tnSprite = new TapNoteSprite(
                             direction,
                             beat,
                         );
-                        this.noteTracks[t].holdCaps.set(
-                            tnEntry[0],
-                            new HoldTailSprite(
+                        let tailSprite: HoldTailSprite | RollTailSprite | undefined;
+                        if (tnEntry[1].subType === TapNoteSubType.Hold) {
+                            tailSprite = new HoldTailSprite(
                                 direction,
                                 beat,
                                 NoteHelpers.noteRowToBeat(tnEntry[1].duration),
-                            ).addToStage(),
-                        );
+                            );
+                        } else {
+                            tailSprite = new RollTailSprite(
+                                direction,
+                                beat,
+                                NoteHelpers.noteRowToBeat(tnEntry[1].duration),
+                            );
+                        }
+                        this.noteTracks[t].holdCaps.set(tnEntry[0], tailSprite.addToStage());
                         break;
+
                     case TapNoteType.Mine:
                         tnSprite = new TapMineSprite(
                             direction,

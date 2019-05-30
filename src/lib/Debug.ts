@@ -28,6 +28,7 @@ export class DebugTools {
     public static PAUSE() {
         GAMESTATE.pause();
         SOUNDMAN.pauseMusic();
+// tslint:disable-next-line: no-debugger
         debugger;
     }
     public static PLAY() {
@@ -38,6 +39,7 @@ export class DebugTools {
         const timeAdvanceSeconds = numFrames * (1 / EXPECTED_FPS);
         SOUNDMAN.musicSkipforwards(timeAdvanceSeconds);
         GAMESTATE.updateSongPosition(SOUNDMAN.getMusicTimeSeconds(), SOUNDMAN.getMusicTiming());
+// tslint:disable-next-line: no-debugger
         debugger;
     }
 }

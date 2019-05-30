@@ -49,6 +49,12 @@ export const DOWN_HOLD_BODY_INACTIVE_SHEET_NAME = 'DownHoldBodyInactiveSheet';
 export const DOWN_HOLD_BOTTOM_CAP_ACTIVE_SHEET_NAME = 'DownHoldBottomCapActiveSheet';
 export const DOWN_HOLD_BOTTOM_CAP_INACTIVE_SHEET_NAME = 'DownHoldBottomCapInactiveSheet';
 
+// Roll note resources
+export const DOWN_ROLL_BODY_ACTIVE_SHEET_NAME = 'DownRollBodyActiveSheet';
+export const DOWN_ROLL_BODY_INACTIVE_SHEET_NAME = 'DownRollBodyInactiveSheet';
+export const DOWN_ROLL_BOTTOM_CAP_ACTIVE_SHEET_NAME = 'DownRollBottomCapActiveSheet';
+export const DOWN_ROLL_BOTTOM_CAP_INACTIVE_SHEET_NAME = 'DownRollBottomCapInactiveSheet';
+
 /** List of all the textures we need to load. */
 const SPRITE_DEFINITIONS: LoadSpriteInfo[] = [
     // Tap notes
@@ -116,6 +122,47 @@ const SPRITE_DEFINITIONS: LoadSpriteInfo[] = [
     {
         name: DOWN_HOLD_BOTTOM_CAP_INACTIVE_SHEET_NAME,
         textureUrl: DownHoldBottomCapInactive,
+        width: TAPNOTE_WIDTH_PX,
+        height: HOLD_BOTTOM_CAP_HEIGHT_PX,
+        numSprites: 1,
+        numAnimFrames: 1,
+        animLength: 1,
+        animLoop: false,
+    },
+    // Rolls
+    // {
+    //     name: DOWN_ROLL_BODY_ACTIVE_SHEET_NAME,
+    //     textureUrl: DownRollBodyActive,
+    //     width: TAPNOTE_WIDTH_PX,
+    //     height: 256,
+    //     numSprites: 1,
+    //     numAnimFrames: 1,
+    //     animLength: 1,
+    //     animLoop: false,
+    // },
+    {
+        name: DOWN_ROLL_BODY_INACTIVE_SHEET_NAME,
+        textureUrl: DownRollBodyInactive,
+        width: TAPNOTE_WIDTH_PX,
+        height: 256,
+        numSprites: 1,
+        numAnimFrames: 1,
+        animLength: 1,
+        animLoop: false,
+    },
+    // {
+    //     name: DOWN_ROLL_BOTTOM_CAP_ACTIVE_SHEET_NAME,
+    //     textureUrl: DownRollBottomCapActive,
+    //     width: TAPNOTE_WIDTH_PX,
+    //     height: HOLD_BOTTOM_CAP_HEIGHT_PX,
+    //     numSprites: 1,
+    //     numAnimFrames: 1,
+    //     animLength: 1,
+    //     animLoop: false,
+    // },
+    {
+        name: DOWN_ROLL_BOTTOM_CAP_INACTIVE_SHEET_NAME,
+        textureUrl: DownRollBottomCapInactive,
         width: TAPNOTE_WIDTH_PX,
         height: HOLD_BOTTOM_CAP_HEIGHT_PX,
         numSprites: 1,
