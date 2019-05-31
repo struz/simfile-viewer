@@ -85,3 +85,6 @@ typings/
 
 # simfile-viewer specifics
 *.ogg
+packs
+packs/*
+public/packs/*

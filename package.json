@@ -7,7 +7,9 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "test:unit": "vue-cli-service test:unit"
+    "test:unit": "vue-cli-service test:unit",
+    "render-scripts": "tsc scripts/*.ts && mkdir -p bin && mv scripts/*.js bin/",
+    "index-packs": "node bin/indexPacks.js"
   },
   "dependencies": {
     "@types/howler": "^2.1.0",
@@ -32,7 +34,7 @@
     "chai": "^4.1.2",
     "stylus": "^0.54.5",
     "stylus-loader": "^3.0.1",
-    "typescript": "^3.4.3",
+    "typescript": "^3.5.1",
     "vue-cli-plugin-vuetify": "^0.5.0",
     "vue-template-compiler": "^2.5.21",
     "vuetify-loader": "^1.0.5"

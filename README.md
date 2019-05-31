@@ -30,5 +30,17 @@ npm run lint
 npm run test:unit
 ```
 
+### Render any helper script `.ts` to `.js`
+```
+npm run render-scripts
+```
+
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
+
+---
+
+## Build an index of simfiles
+```
+npm run index-packs
+```
