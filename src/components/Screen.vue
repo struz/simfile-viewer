@@ -47,8 +47,23 @@ export default Screen;
 </script>
 
 <style scoped>
+/* The default dimensions for the screen */
 canvas {
-  width: 100%;
-  height: 100%;
+  width: 320px;
+  height: 600px;
+}
+
+/* For screens less than 320px width, use 100% of the screen space */
+@media only screen and (max-width: 320px) { 
+  canvas {
+    width: 100%;
+  }
+}
+
+/* If a screen is less than 600px high, use the entire screen. */
+@media only screen and (max-height: 600px) {
+  canvas {
+    height: 100%;
+  }
 }
 </style>

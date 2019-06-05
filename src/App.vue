@@ -16,10 +16,23 @@
     </v-toolbar>
 
     <v-content>
-      <screen></screen>
-      <v-btn v-on:click="play">Test</v-btn>
-      <v-btn v-on:click="seekTrack">Seek</v-btn>
-      <v-text-field v-model.number="seek" type="number"></v-text-field>
+      <v-container>
+        <v-layout row>
+          <v-flex md6>
+            <screen></screen>
+          </v-flex>
+          <v-flex md6>
+            <chart-picker
+              @changeChart="changeChart">
+            </chart-picker>
+          </v-flex>
+        </v-layout>
+        <v-flex>
+          <v-btn v-on:click="play">Test</v-btn>
+          <v-btn v-on:click="seekTrack">Seek</v-btn>
+          <v-text-field v-model.number="seek" type="number"></v-text-field>
+        </v-flex>
+      </v-container>
     </v-content>
   </v-app>
 </template>
@@ -27,7 +40,10 @@
 <script lang="ts">
 import Vue from 'vue';
 import { Component } from 'vue-property-decorator';
+
 import Screen from './components/Screen.vue';
+import ChartPicker from './components/ChartPicker.vue';
+
 import { Howl } from 'howler';
 import GameLoop from './lib/GameLoop';
 import SCREENMAN from '@/lib/ScreenManager.ts';
@@ -57,6 +73,8 @@ import NoteLoaderSM from '@/lib/NoteLoaderSM';
 import Song from '@/lib/Song';
 import SOUNDMAN, { MusicToPlay } from '@/lib/GameSoundManager';
 import { DebugTools } from '@/lib/Debug';
+import { ChartURLs } from './lib/ChartPicker';
+import FileOperations from './lib/FileOperations';
 
 // Load SM file
 let song = new Song();
@@ -100,42 +118,47 @@ declare global {
 }
 window.howl = bigSkyMusic;
 
-// TODO: change below to class style (see Screen.vue)
-const AppComponent = Vue.extend({
+// See https://vuejs.org/v2/guide/typescript.html for why we do the below
+@Component({
   name: 'App',
   components: {
     Screen,
+    ChartPicker,
   },
-  data() {
-    return {
-      seek: 0,
-    };
-  },
-  methods: {
-    play() {
-      if (loadedMusic && loadedSong && !playing) {
-        playing = true;
+})
+class App extends Vue {
+  public seek = 0;
 
-        // TODO: IMPORTANT: write functions to ensure that a Song is loaded before we play the Music
-        // See PlayMusic() in C++ for an example.
-        GAMESTATE.loadNextSong(song);
-        GAMESTATE.play(); // ensure song timer is running
+  public play() {
+    if (loadedMusic && loadedSong && !playing) {
+      playing = true;
 
-        const toPlay = new MusicToPlay();
-        toPlay.music = bigSkyMusic;
-        toPlay.hasTiming = true;
-        toPlay.timing = song.songTiming;
-        toPlay.startSeconds = this.$data.seek;
-        SOUNDMAN.startMusic(toPlay);
-        window.debugTools = DebugTools;
-      }
-    },
-    seekTrack() {
-      if (loadedMusic && loadedSong && playing) {
-        bigSkyMusic.seek(this.$data.seek);
-      }
-    },
-  },
-});
-export default AppComponent;
+      // TODO: IMPORTANT: write functions to ensure that a Song is loaded before we play the Music
+      // See PlayMusic() in C++ for an example.
+      GAMESTATE.loadNextSong(song);
+      GAMESTATE.play(); // ensure song timer is running
+
+      const toPlay = new MusicToPlay();
+      toPlay.music = bigSkyMusic;
+      toPlay.hasTiming = true;
+      toPlay.timing = song.songTiming;
+      toPlay.startSeconds = this.$data.seek;
+      SOUNDMAN.startMusic(toPlay);
+      window.debugTools = DebugTools;
+    }
+  }
+
+  public seekTrack() {
+    if (loadedMusic && loadedSong && playing) {
+      bigSkyMusic.seek(this.$data.seek);
+    }
+  }
+
+  public changeChart(urls: ChartURLs) {
+    // Use GAMEMAN and other helpers to load the chart
+    // Use FileOperations to do the heavy lifting, use the onload to set something
+    // in GAMEMAN or this class that disables the loading bar and allows playing
+  }
+}
+export default App;
 </script>

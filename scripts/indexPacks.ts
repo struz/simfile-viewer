@@ -1,17 +1,7 @@
 // Index all of the packs under 'packs/'
 // Must be run from the root project directory
-import { readdirSync, writeFileSync, fstat } from 'fs';
-
-interface Chart {
-    name: string;
-    oggFilename: string | null; // ogg files are optional for copyright reasons
-    simFilename: string;
-}
-
-interface Pack {
-    name: string;
-    charts: Chart[];
-}
+import { readdirSync, writeFileSync } from 'fs';
+import { Chart, Pack } from '../src/lib/ChartPicker';
 
 // List all the packs
 const packs: Pack[] = [];
