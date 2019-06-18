@@ -20,7 +20,7 @@ class BodyAndCapNote extends Entity implements Drawable {
     protected duration: number;
 
     /** The sprite showing the tiling area of really long notes. */
-    protected bodyTilingSprite: GameSprite | undefined;
+    protected bodyTilingSprite: GameSprite[] | undefined;
     /** The sprite showing the beginning of the body of the long note. */
     protected bodySprite: GameSprite;
     /** The sprite showing the bottom of the long note. */
@@ -45,7 +45,7 @@ class BodyAndCapNote extends Entity implements Drawable {
         this.onStage = false;
 
         // We anchor to the top of the hold, but the middle of the cap, so do some maths
-        // to make them line up
+        // to make them line up. This height does not include to the tip of the cap.
         this.height = this.calculateLongNoteHeight();
 
         // Work out the dimensions for the first segment of the long note. Often this
@@ -59,16 +59,26 @@ class BodyAndCapNote extends Entity implements Drawable {
 
         // If we can't fit the long note entirely into the first section then we need a tiling section.
         if (this.height > bodySpriteInfo.height) {
-            // This tiling sprite is guaranteed to be a multiple of the original texture
-            // height, based on the calculations for the first part above.
-            const bodyTilingSprite = new PIXI.TilingSprite(
-                bodySpriteInfo.textures[0][0],
-                bodySpriteInfo.width,
-                bodySpriteInfo.height);
-            // Cut off a pixel around the border to make seamless transitions between the pieces
-            bodyTilingSprite.clampMargin = -0.5;
-            bodyTilingSprite.height = this.height - firstBodySegmentTexHeight;
-            this.bodyTilingSprite = new GameSprite(bodyTilingSprite);
+            this.bodyTilingSprite = [];
+
+            let remainingHeight = this.height - firstBodySegmentTexHeight;
+            while (remainingHeight > 0) {
+                const segmentHeight = Math.min(remainingHeight, bodySpriteInfo.height);
+                let bodySegmentTex: PIXI.Texture;
+                if (segmentHeight === bodySpriteInfo.height) {
+                    bodySegmentTex = bodySpriteInfo.textures[0][0];
+                } else {
+                    // Only create new textures for custom dimensions
+                    bodySegmentTex = new PIXI.Texture(
+                        bodySpriteInfo.textures[0][0].baseTexture,
+                        new PIXI.Rectangle(0, 0, bodySpriteInfo.width, segmentHeight),
+                    );
+                }
+                const bodySegmentSprite = new PIXI.Sprite(bodySegmentTex);
+                this.bodyTilingSprite.push(new GameSprite(bodySegmentSprite));
+
+                remainingHeight -= segmentHeight;
+            }
         }
 
         // Create the first (and sometimes only) segment of the body sprite
@@ -92,7 +102,7 @@ class BodyAndCapNote extends Entity implements Drawable {
         const laneX = LANE_MARGIN + (TAPNOTE_WIDTH_PX * laneIndex);
         bodySprite.x = laneX;
         if (this.bodyTilingSprite !== undefined) {
-            this.bodyTilingSprite.getSprite().x = laneX;
+            this.bodyTilingSprite.forEach((gs) => gs.getSprite().x = laneX);
         }
         bottomCapSprite.x = laneX;
 
@@ -100,7 +110,7 @@ class BodyAndCapNote extends Entity implements Drawable {
         // with maths.
         bodySprite.anchor.y = 0;
         if (this.bodyTilingSprite !== undefined) {
-            this.bodyTilingSprite.getSprite().anchor.y = 0;
+            this.bodyTilingSprite.forEach((gs) => gs.getSprite().anchor.y = 0);
         }
         bottomCapSprite.anchor.y = 0;
 
@@ -121,7 +131,7 @@ class BodyAndCapNote extends Entity implements Drawable {
         // If Z indexing is disabled this is the only way to ensure it draws below.
         this.bottomCapSprite.addToStage();
         if (this.bodyTilingSprite !== undefined) {
-            this.bodyTilingSprite.addToStage();
+            this.bodyTilingSprite.forEach((gs) => gs.addToStage());
         }
         this.bodySprite.addToStage();
         return this;
@@ -132,7 +142,7 @@ class BodyAndCapNote extends Entity implements Drawable {
         this.onStage = false;
         this.bottomCapSprite.removeFromStage();
         if (this.bodyTilingSprite !== undefined) {
-            this.bodyTilingSprite.removeFromStage();
+            this.bodyTilingSprite.forEach((gs) => gs.removeFromStage());
         }
         this.bodySprite.removeFromStage();
         return this;
@@ -172,7 +182,11 @@ class BodyAndCapNote extends Entity implements Drawable {
 
         // If applicable, update the tiling portion
         if (this.bodyTilingSprite !== undefined) {
-            this.bodyTilingSprite.getSprite().y = headYPos + bodySprite.height;
+            let tilingPosY = headYPos + bodySprite.height;
+            this.bodyTilingSprite.forEach((gs) => {
+                gs.getSprite().y = tilingPosY;
+                tilingPosY += gs.getSprite().height;
+            });
         }
 
         this.bottomCapSprite.setPosY(headYPos + this.height);
