@@ -65,6 +65,8 @@ class BodyAndCapNote extends Entity implements Drawable {
                 bodySpriteInfo.textures[0][0],
                 bodySpriteInfo.width,
                 bodySpriteInfo.height);
+            // Cut off a pixel around the border to make seamless transitions between the pieces
+            bodyTilingSprite.clampMargin = -0.5;
             bodyTilingSprite.height = this.height - firstBodySegmentTexHeight;
             this.bodyTilingSprite = new GameSprite(bodyTilingSprite);
         }
