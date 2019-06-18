@@ -1,48 +1,45 @@
 import axios from 'axios';
 import { Howl } from 'howler';
 
+const OGG_LOAD_TIMEOUT = 60000; // Milliseconds
+const OGG_LOAD_POLL = 200;   // Milliseconds
+
 class FileOperations {
-    public static loadSmFile(url: string) {
-        return axios.get(url, {responseType: 'text'}).then((response) => {
+    public static loadTextFile(uri: string) {
+        return axios.get(uri, {responseType: 'text'}).then((response) => {
             return response.data;
-        }).catch((error) => {
-            console.error(`failed to load .sm file at ${url}: ${error}`);
         });
     }
 
-    public static loadOggFile(url: string) {
+    public static loadOggFileAsHowl(uri: string): Promise<Howl> {
         let loaded = false;
-        let error = '';
+        let error: Error | null = null;
         const oggHowl = new Howl({
-            src: [url],
+            src: [uri],
             onload: () => {
                 loaded = true;
             },
             onloaderror: (_, msg) => {
-                error = `error loading .ogg file at ${url}: ${msg}`;
+                error = new Error(`error loading .ogg file at ${uri}: ${msg}`);
             },
         });
 
         return new Promise((resolve, reject) => {
             const startTime = Date.now();
-            const timeout = 60000; // milliseconds
+            const timeout = OGG_LOAD_TIMEOUT;
             const checkLoaded = () => {
                 if (loaded) {
-                    console.log(`succesfully loaded .ogg file at ${url}`)
+                    console.log(`succesfully loaded .ogg file at ${uri}`);
                     resolve(oggHowl);
-                } else if (error !== '') {
-                    reject(error);
+                } else if (error !== null) {
+                    throw error;
                 } else if (Date.now() > startTime + timeout) {
-                    reject(`timed out after ${timeout}ms while loading .ogg file at ${url}`);
+                    throw new Error(`timed out after ${timeout}ms while loading .ogg file at ${uri}`);
                 } else {
-                    setTimeout(checkLoaded, 200);
+                    setTimeout(checkLoaded, OGG_LOAD_POLL);
                 }
             };
             checkLoaded();
-        })
-        .then((loadedOgg) => loadedOgg)
-        .catch((msg) => {
-            console.error(msg);
         });
     }
 }

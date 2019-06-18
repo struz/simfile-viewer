@@ -7,7 +7,7 @@ import { GameTimer, gZeroTimer } from './GameTimer';
 import { Steps } from './Steps';
 import Song from './Song';
 import { NotImplementedError } from './Error';
-import SOUNDMAN from './GameSoundManager';
+import SOUNDMAN, { MusicToPlay } from './GameSoundManager';
 
 
 /** Holds all the state about the game. A singleton. */
@@ -85,6 +85,8 @@ export class GameState {
 
     /** All the logic involved with loading a new song. */
     public loadNextSong(newSong: Song | undefined) {
+        this.pause();
+        SOUNDMAN.pauseMusic();
         this.resetMusicStatistics();
         if (newSong === undefined) {
             return;
@@ -111,13 +113,10 @@ export class GameState {
         }
     }
 
-    public play() {
-        SOUNDMAN.handleSongTimer(true);
-    }
+    public play() { SOUNDMAN.handleSongTimer(true); }
 
-    public pause() {
-        SOUNDMAN.handleSongTimer(false);
-    }
+    public pause() { SOUNDMAN.handleSongTimer(false); }
+    public isPaused() { return !SOUNDMAN.isHandlingSongTimer(); }
 
     /** Update the game state.
      * @param delta The time that has passed since the last update.
@@ -188,6 +187,28 @@ export class GameState {
             this.position.songBeatVisible,
             positionSeconds,
             this.position.songBeatNoOffset);
+    }
+
+    /**
+     * Takes an already created Song and Howl and sets up the game ready to play them.
+     * @param songData the Song to play.
+     * @param songMusic the created Howl representing the sound file.
+     * @param seek number of seconds to start playing at.
+     */
+    public loadSong(songData: Song, songMusic: Howl, seek?: number) {
+        // TODO: IMPORTANT: write functions to ensure that a Song is loaded before we play the Music
+        // See PlayMusic() in C++ for an example.
+        this.loadNextSong(songData);
+
+        const toPlay = new MusicToPlay();
+        toPlay.music = songMusic;
+        toPlay.hasTiming = true;
+        toPlay.timing = songData.songTiming;
+        if (seek !==  undefined) {
+            toPlay.startSeconds = seek;
+        }
+        GAMESTATE.play();
+        SOUNDMAN.startMusic(toPlay);
     }
 }
 const GAMESTATE = GameState.getInstance();

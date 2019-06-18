@@ -1,3 +1,4 @@
+// See https://github.com/vuejs/vue-cli/tree/dev/docs/config
 module.exports = {
     chainWebpack: config => {
       config.module

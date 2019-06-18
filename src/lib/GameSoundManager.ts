@@ -10,7 +10,7 @@ import SongSound from './SongSound';
  * the playing music.
  */
 const MAX_TOLERATED_DRIFT_SECS = (1 / EXPECTED_FPS) * 2; // 2 frames @ 60fps
-const DRIFT_SECS_BEFORE_UPDATE = 1;
+const DRIFT_SECS_BEFORE_UPDATE = 0.05;
 
 export class MusicPlaying {
     public music: SongSound;
@@ -90,6 +90,12 @@ export class GameSoundManager {
         }
     }
 
+    public musicSeek(seekTimeSeconds: number) {
+        if (this.musicPlaying !== undefined) {
+            this.musicPlaying.music.seek(seekTimeSeconds);
+        }
+    }
+
     public musicSkipforwards(seekTimeSeconds: number) {
         if (this.musicPlaying !== undefined) {
             const currentTimeSeconds = this.musicPlaying.music.getTimeElapsed();
@@ -144,6 +150,7 @@ export class GameSoundManager {
     public handleSongTimer(on: boolean) {
         this.updatingTimer = on;
     }
+    public isHandlingSongTimer() { return this.updatingTimer; }
 
     // The idea here is to fake the sounds playing for now and just move the song position along
     public update(deltaTime: number) {

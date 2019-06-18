@@ -28,7 +28,7 @@
           </v-flex>
         </v-layout>
         <v-flex>
-          <v-btn v-on:click="play">Test</v-btn>
+          <v-btn v-on:click="playPauseTrack">Play/Pause</v-btn>
           <v-btn v-on:click="seekTrack">Seek</v-btn>
           <v-text-field v-model.number="seek" type="number"></v-text-field>
         </v-flex>
@@ -76,47 +76,17 @@ import { DebugTools } from '@/lib/Debug';
 import { ChartURLs } from './lib/ChartPicker';
 import FileOperations from './lib/FileOperations';
 
-// Load SM file
-let song = new Song();
-let loadedSong = false;
-const rawFile = new XMLHttpRequest();
-rawFile.onreadystatechange = () => {
-  if (rawFile.readyState === 4) {
-    if (rawFile.status === 200 || rawFile.status === 0) {
-      const bigSkySmFileTxt = rawFile.responseText;
-      console.log('gotcha');
-
-      const msdFile = new MsdFile(bigSkySmFileTxt);
-      song = NoteLoaderSM.loadFromSimfile(msdFile);
-      loadedSong = true;
-    }
-  }
-};
-rawFile.open('GET', './BigSky.sm', true);
-rawFile.send(null);
-
-// Load music
-let loadedMusic = false;
-const bigSkyMusic = new Howl({
-  src: ['./bigsky.ogg'],
-  onload: () => {
-    console.log('gotcha2');
-    loadedMusic = true;
-  },
-  onloaderror: (_, msg) => {
-    console.log(`error loading bigsky.ogg: ${msg}`);
-  },
-});
-
-let playing = false;
-
 declare global {
   interface Window {
-    howl: any;
     debugTools: any;
+    noteField: any;
+    GAMESTATE: any;
+    SOUNDMAN: any;
   }
 }
-window.howl = bigSkyMusic;
+window.debugTools = DebugTools;
+window.GAMESTATE = GAMESTATE;
+window.SOUNDMAN = SOUNDMAN;
 
 // See https://vuejs.org/v2/guide/typescript.html for why we do the below
 @Component({
@@ -128,29 +98,19 @@ window.howl = bigSkyMusic;
 })
 class App extends Vue {
   public seek = 0;
-
-  public play() {
-    if (loadedMusic && loadedSong && !playing) {
-      playing = true;
-
-      // TODO: IMPORTANT: write functions to ensure that a Song is loaded before we play the Music
-      // See PlayMusic() in C++ for an example.
-      GAMESTATE.loadNextSong(song);
-      GAMESTATE.play(); // ensure song timer is running
-
-      const toPlay = new MusicToPlay();
-      toPlay.music = bigSkyMusic;
-      toPlay.hasTiming = true;
-      toPlay.timing = song.songTiming;
-      toPlay.startSeconds = this.$data.seek;
-      SOUNDMAN.startMusic(toPlay);
-      window.debugTools = DebugTools;
-    }
-  }
+  public publicPath = process.env.BASE_URL;
 
   public seekTrack() {
-    if (loadedMusic && loadedSong && playing) {
-      bigSkyMusic.seek(this.$data.seek);
+    SOUNDMAN.musicSeek(this.$data.seek);
+  }
+
+  public playPauseTrack() {
+    if (!GAMESTATE.isPaused()) {
+      GAMESTATE.pause();
+      SOUNDMAN.pauseMusic();
+    } else {
+      GAMESTATE.play();
+      SOUNDMAN.resumeMusic();
     }
   }
 
@@ -158,6 +118,42 @@ class App extends Vue {
     // Use GAMEMAN and other helpers to load the chart
     // Use FileOperations to do the heavy lifting, use the onload to set something
     // in GAMEMAN or this class that disables the loading bar and allows playing
+    if (urls.ogg === null) { throw new Error('no ogg not supported yet!'); }
+    console.log(this.publicPath);
+
+    let newSong: Song | null;
+    const absoluteSimURI = `${this.publicPath}packs/${urls.simFile}`;
+    const p1 = FileOperations.loadTextFile(absoluteSimURI)
+    .then((smText) => {
+      const msdFile = new MsdFile(smText);
+      newSong = NoteLoaderSM.loadFromSimfile(msdFile);
+      console.log('loaded sm data');
+    })
+    .catch((error) => {
+      console.error(`failed to load .sm file at '${absoluteSimURI}': ${error}`);
+    });
+
+    let newHowl: Howl | null;
+    const absoluteHowlURI = `${this.publicPath}packs/${urls.ogg}`;
+    const p2 = FileOperations.loadOggFileAsHowl(absoluteHowlURI)
+    .then((howl) => {
+      newHowl = howl;
+      console.log('loaded music');
+    })
+    .catch((error) => {
+      console.error(`failed to load .ogg file at '${absoluteHowlURI}': ${error}`);
+    });
+
+    // Once both parts have been loaded, tee up the new song
+    Promise.all([p1, p2]).then(() => {
+      if (newSong === null) { throw new Error('song did not load properly'); }
+      if (newHowl === null) { throw new Error('howl did not load properly'); }
+      GAMESTATE.loadSong(newSong, newHowl, this.$data.seek);
+    })
+    .catch((error) => {
+      console.error(`failed to load song into game: ${error}`);
+    });
+    console.log('chart changed: ' +  urls.ogg);
   }
 }
 export default App;
