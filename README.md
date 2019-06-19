@@ -42,5 +42,8 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 
 ## Build an index of simfiles
 ```
+# local
 npm run index-packs
+# s3
+npm run index-packs-s3
 ```

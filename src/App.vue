@@ -124,35 +124,36 @@ class App extends Vue {
     let newSong: Song | null;
     const absoluteSimURI = `${this.publicPath}packs/${urls.simFile}`;
     const p1 = FileOperations.loadTextFile(absoluteSimURI)
-    .then((smText) => {
-      const msdFile = new MsdFile(smText);
-      newSong = NoteLoaderSM.loadFromSimfile(msdFile);
-      console.log('loaded sm data');
-    })
-    .catch((error) => {
-      console.error(`failed to load .sm file at '${absoluteSimURI}': ${error}`);
-    });
+      .then((smText) => {
+        const msdFile = new MsdFile(smText);
+        newSong = NoteLoaderSM.loadFromSimfile(msdFile);
+        console.log('loaded sm data');
+      })
+      .catch((error) => {
+        console.error(`failed to load .sm file at '${absoluteSimURI}': ${error}`);
+      });
 
     let newHowl: Howl | null;
     const absoluteHowlURI = `${this.publicPath}packs/${urls.ogg}`;
     const p2 = FileOperations.loadOggFileAsHowl(absoluteHowlURI)
-    .then((howl) => {
-      newHowl = howl;
-      console.log('loaded music');
-    })
-    .catch((error) => {
-      console.error(`failed to load .ogg file at '${absoluteHowlURI}': ${error}`);
-    });
+      .then((howl) => {
+        newHowl = howl;
+        console.log('loaded music');
+      })
+      .catch((error) => {
+        console.error(`failed to load .ogg file at '${absoluteHowlURI}': ${error}`);
+      });
 
     // Once both parts have been loaded, tee up the new song
-    Promise.all([p1, p2]).then(() => {
-      if (newSong === null) { throw new Error('song did not load properly'); }
-      if (newHowl === null) { throw new Error('howl did not load properly'); }
-      GAMESTATE.loadSong(newSong, newHowl, this.$data.seek);
-    })
-    .catch((error) => {
-      console.error(`failed to load song into game: ${error}`);
-    });
+    Promise.all([p1, p2])
+      .then(() => {
+        if (newSong === null) { throw new Error('song did not load properly'); }
+        if (newHowl === null) { throw new Error('howl did not load properly'); }
+        GAMESTATE.loadSong(newSong, newHowl, this.$data.seek);
+      })
+      .catch((error) => {
+        console.error(`failed to load song into game: ${error}`);
+      });
     console.log('chart changed: ' +  urls.ogg);
   }
 }

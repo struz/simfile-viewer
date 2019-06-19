@@ -42,4 +42,4 @@ packs.forEach((pack) => {
 });
 
 // Dump the packs into a JSON file
-writeFileSync('public/packs.json', JSON.stringify(packs), 'utf8');
+writeFileSync('public/packs-dev.json', JSON.stringify(packs), 'utf8');
