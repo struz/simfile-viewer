@@ -76,6 +76,9 @@ import { DebugTools } from '@/lib/Debug';
 import { ChartURLs } from './lib/ChartPicker';
 import FileOperations from './lib/FileOperations';
 
+// This can be overridden with the process.env.VUE_APP_PACK_URL_PREFIX environment variable
+const DEFAULT_PACK_URL_PREFIX = 'https://s3-us-west-2.amazonaws.com/struz.simfile-viewer/';
+
 declare global {
   interface Window {
     debugTools: any;
@@ -84,6 +87,7 @@ declare global {
     SOUNDMAN: any;
   }
 }
+// For live debugging
 window.debugTools = DebugTools;
 window.GAMESTATE = GAMESTATE;
 window.SOUNDMAN = SOUNDMAN;
@@ -98,7 +102,7 @@ window.SOUNDMAN = SOUNDMAN;
 })
 class App extends Vue {
   public seek = 0;
-  public publicPath = process.env.BASE_URL;
+  public packPathPrefix = process.env.VUE_APP_PACK_URL_PREFIX || DEFAULT_PACK_URL_PREFIX;
 
   public seekTrack() {
     SOUNDMAN.musicSeek(this.$data.seek);
@@ -119,10 +123,9 @@ class App extends Vue {
     // Use FileOperations to do the heavy lifting, use the onload to set something
     // in GAMEMAN or this class that disables the loading bar and allows playing
     if (urls.ogg === null) { throw new Error('no ogg not supported yet!'); }
-    console.log(this.publicPath);
 
     let newSong: Song | null;
-    const absoluteSimURI = `${this.publicPath}packs/${urls.simFile}`;
+    const absoluteSimURI = `${this.packPathPrefix}packs/${urls.simFile}`;
     const p1 = FileOperations.loadTextFile(absoluteSimURI)
       .then((smText) => {
         const msdFile = new MsdFile(smText);
@@ -134,7 +137,7 @@ class App extends Vue {
       });
 
     let newHowl: Howl | null;
-    const absoluteHowlURI = `${this.publicPath}packs/${urls.ogg}`;
+    const absoluteHowlURI = `${this.packPathPrefix}packs/${urls.ogg}`;
     const p2 = FileOperations.loadOggFileAsHowl(absoluteHowlURI)
       .then((howl) => {
         newHowl = howl;

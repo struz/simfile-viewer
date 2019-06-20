@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Howl } from 'howler';
 
 const OGG_LOAD_TIMEOUT = 60000; // Milliseconds
-const OGG_LOAD_POLL = 200;   // Milliseconds
+const OGG_LOAD_POLL    = 200;   // Milliseconds
 
 class FileOperations {
     public static loadTextFile(uri: string) {

@@ -208,6 +208,7 @@ export class GameState {
             toPlay.startSeconds = seek;
         }
         GAMESTATE.play();
+        // TODO: don't always immediately start the song, have an init function instead
         SOUNDMAN.startMusic(toPlay);
     }
 }

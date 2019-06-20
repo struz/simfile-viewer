@@ -13,6 +13,7 @@ import { Chart, Pack } from '../src/lib/ChartPicker';
 
 const BUCKET = 'struz.simfile-viewer';
 const PREFIX = 'packs/';
+const PAGE_SIZE = 1000;
 const TOO_BIG_THRESHOLD = 52428800; // 50MB in bytes
 
 // We have to map the result to make this nicer for TypeScript
@@ -22,6 +23,11 @@ interface CmdResult {
     raw: string;
 }
 interface S3Result {
+    // These three used for pagination
+    IsTruncated: boolean;
+    Marker: string;
+    NextToken: string | undefined;
+    // The contents of the response
     Contents: S3Object[];
 }
 interface S3Object {
@@ -56,7 +62,6 @@ function keyToMeta(key: string): FileMetadata {
 /**
  * Attempts to add a chart to a pack if it has the right information.
  * If it doesn't have enough information then it will not be added.
- * 
  * @param pack the pack to add the chart to.
  * @param chart the chart to try and add to the pack.
  * @returns true if the chart was added to the pack, false otherwise.
@@ -66,26 +71,50 @@ function addChartToPack(pack: Pack, chart: any) {
         (chart.hasOwnProperty('oggFilename') && chart.oggFilename !== '')) {
         // Can add chart, it's fully filled out
         pack.charts.push(chart as Chart);
+        console.log(`Added chart ${chart.name} to pack ${pack.name}`);
         return true;
     }
+    console.log(`Rejected adding chart ${chart.name} to pack ${pack.name}`);
     return false;
 }
 
+// tslint:disable-next-line: max-line-length
+const S3_LIST_COMMAND = `s3api list-objects --bucket ${BUCKET} --prefix ${PREFIX} --page-size ${PAGE_SIZE} --max-items ${PAGE_SIZE}`;
 const aws = new Aws();
-aws.command(`s3api list-objects --bucket ${BUCKET} --prefix ${PREFIX} --no-paginate`).then((data: CmdResult) => {
-    if (data.error !== '') { throw new Error(data.error); }
 
-    // Because of this alphabetic sorting we're guaranteed to come across all parts of
-    // a pack & chart before moving to the next
-    data.object.Contents.sort((a: S3Object, b: S3Object) => {
+// First we fetch all of the s3 objects into local memory so we can manipulate the whole list
+const s3Objects: S3Object[] = [];
+let numFetchedPages = 0;
+aws.command(S3_LIST_COMMAND).then(async (data: CmdResult) => {
+    if (data.error !== '') { throw new Error(data.error); }
+    console.log(`Fetched page ${++numFetchedPages} of S3 objects`);
+
+    data.object.Contents.forEach((s3obj) => s3Objects.push(s3obj));
+
+    while (data.object.NextToken !== undefined) {
+        // If there's more data to get, get it one page after another
+        console.log('fetching another page');
+        await aws.command(`${S3_LIST_COMMAND} --starting-token ${data.object.NextToken}`)
+        .then((data2: CmdResult) => {
+            data = data2; // so that the while loop picks up the IsTruncated
+            if (data.error !== '') { throw new Error(data.error); }
+            console.log(`Fetched page ${++numFetchedPages} of S3 objects`);
+            data.object.Contents.forEach((s3obj) => s3Objects.push(s3obj));
+        });
+    }
+})
+.then(() => {
+    // Then we the objects in alphabetical order of keys.
+    // This way we're guaranteed to come across all parts of a pack & chart
+    // before moving to the next one.
+    s3Objects.sort((a: S3Object, b: S3Object) => {
         return a.Key.localeCompare(b.Key);
     });
 
     const packs: Pack[] = [];
     let currentPack: Pack | null = null;
     let currentChart: any = null;
-    data.object.Contents.forEach((s3obj) => {
-        console.log(s3obj.Key); // this is alphabetically sorted now
+    s3Objects.forEach((s3obj) => {
         if (s3obj.Size > TOO_BIG_THRESHOLD) { return; }  // too big to consider hosting
 
         const fileMeta = keyToMeta(s3obj.Key);
@@ -102,12 +131,14 @@ aws.command(`s3api list-objects --bucket ${BUCKET} --prefix ${PREFIX} --no-pagin
         // If the chart name has changed then we won't be finding any more files for it
         if (fileMeta.chart !== currentChart.name) {
             addChartToPack(currentPack, currentChart);
+            console.log(`Created new chart ${fileMeta.chart}`);
             currentChart = {name: fileMeta.chart};
         }
 
         // If the pack name has changed then we need to create the new pack
         if (fileMeta.pack !== currentPack.name) {
             packs.push(currentPack);
+            console.log(`Created new pack ${fileMeta.pack}`);
             currentPack = {name: fileMeta.pack, charts: []};
         }
 
@@ -125,8 +156,4 @@ aws.command(`s3api list-objects --bucket ${BUCKET} --prefix ${PREFIX} --no-pagin
 
     // Dump the packs into a JSON file
     writeFileSync('public/packs.json', JSON.stringify(packs), 'utf8');
-})
-.catch((error) => {
-    console.error(error);
 });
-

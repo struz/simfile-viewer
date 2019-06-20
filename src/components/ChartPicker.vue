@@ -22,12 +22,10 @@
 <script lang="ts">
 import Vue from 'vue';
 import { Component } from 'vue-property-decorator';
-
 import axios from 'axios';
-
 import { Pack, ChartURLs, Chart } from '@/lib/ChartPicker';
 
-const PACK_INFO_URL = 'packs.json';
+const PACK_INDEX_FILENAME = process.env.VUE_APP_PACK_INDEX_FILENAME || 'packs.json';
 const DEFAULT_SELECTED_CHART = {name: '<Select a chart>', oggFilename: '', simFilename: ''};
 
 // See https://vuejs.org/v2/guide/typescript.html for why we do the below
@@ -56,7 +54,7 @@ class ChartPicker extends Vue {
 
   public mounted() {
     // Fetch and return the pack data
-    axios.get(PACK_INFO_URL).then((response) => {
+    axios.get(`${process.env.BASE_URL}${PACK_INDEX_FILENAME}`).then((response) => {
       this.packs = response.data;
       // Insert default/dummy charts
       this.packs.forEach((pack) => {
