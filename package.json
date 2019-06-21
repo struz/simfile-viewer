@@ -11,7 +11,7 @@
     "render-scripts": "tsc scripts/*.ts && mkdir -p bin && mv scripts/*.js bin/",
     "index-packs": "node bin/indexPacks.js",
     "index-packs-s3": "node bin/indexPacksS3.js",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "npm run build && gh-pages -td dist"
   },
   "dependencies": {
     "@types/howler": "^2.1.0",

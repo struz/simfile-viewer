@@ -58,5 +58,5 @@ Make a file called `.env.development.local` and override the following to avoid 
 
 ## Publish to github-pages
 ```
-npm run publish -- "changelog here"
+npm run deploy
 ```
