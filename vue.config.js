@@ -1,6 +1,14 @@
 // See https://github.com/vuejs/vue-cli/tree/dev/docs/config
 module.exports = {
     chainWebpack: config => {
+      config
+        .plugin('copy')
+        .tap(args => {
+          // Do not copy specific files from public into dist/ when building
+          args[0][0].ignore.push('packs-dev.json')
+          args[0][0].ignore.push('packs/*')
+          return args
+        })
       config.module
         .rule('vue')
         .use('vue-loader')
@@ -16,5 +24,6 @@ module.exports = {
     },
     devServer: {
       disableHostCheck: true,
-    }
+    },
+    publicPath: process.env.NODE_ENV === 'production' ? '/simfile-viewer/' : '/'
   }
