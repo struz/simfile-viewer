@@ -64,9 +64,6 @@ http://east.stepmania-online.com/SOWNDS.zip
 ## Stamina RPG 3
 http://groovestats.com/SRPG3/downloads/srpg3pack.zip
 
-## Stamina RPG 3 Unlocks
-http://groovestats.com/SRPG3/downloads/foradi.zip
-
 ## Tachyon Alpha
 http://east.stepmania-online.com/Tachyon%20Alpha.zip
 
