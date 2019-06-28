@@ -144,6 +144,13 @@ export class GameSoundManager {
         }
 
         newMusic.music.play();
+        if (!toPlay.forceLoop) {
+            // With loops this would fire on the end of each loop
+            newMusic.music.getSound().on('end', () => {
+                // When the song has ended, stop wasting processing cycles
+                this.handleSongTimer(false);
+            });
+        }
         this.musicPlaying = newMusic;
     }
 
