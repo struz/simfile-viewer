@@ -49,7 +49,7 @@ var fs_1 = require("fs");
 var BUCKET = 'struz.simfile-viewer';
 var PREFIX = 'packs/';
 var PAGE_SIZE = 1000;
-var TOO_BIG_THRESHOLD = 52428800; // 50MB in bytes
+var TOO_BIG_THRESHOLD = 15728640; // 15MB in bytes
 /**
  * Turns a key into some metadata about the key.
  * @param key The S3 bucket key to parse

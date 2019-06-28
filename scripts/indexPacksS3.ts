@@ -14,7 +14,7 @@ import { Chart, Pack } from '../src/lib/ChartPicker';
 const BUCKET = 'struz.simfile-viewer';
 const PREFIX = 'packs/';
 const PAGE_SIZE = 1000;
-const TOO_BIG_THRESHOLD = 52428800; // 50MB in bytes
+const TOO_BIG_THRESHOLD = 15728640; // 15MB in bytes
 
 // We have to map the result to make this nicer for TypeScript
 interface CmdResult {
