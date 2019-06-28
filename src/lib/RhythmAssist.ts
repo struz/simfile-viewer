@@ -27,8 +27,7 @@ export class RhythmAssist {
         const song = GAMESTATE.curSong;
         if (song === undefined) { return; }
         const timing = song.songTiming;
-        // TODO: don't just use getSteps(0), use an actual value
-        const nd = song.getSteps(0).getNoteData();
+        const nd = song.getSteps(GAMESTATE.selectedSteps).getNoteData();
 
         // const timing = GAMESTATE.curSteps[0].timingData;  // TODO: use player number if ever applicable
         const songBeat = timing.getBeatFromElapsedTimeNoOffset(positionSeconds);

@@ -65,7 +65,7 @@ class ArrowEffects {
         const position = GAMESTATE.position; // TODO: get position from args
 
         const songBeat = position.songBeatVisible;
-        const curSteps = GAMESTATE.curSong.getSteps(0); // TODO: use a proper index
+        const curSteps = GAMESTATE.curSong.getSteps(GAMESTATE.selectedSteps);
         // curSteps is unused for now as we're just relying on song timing
         const timingData = GAMESTATE.curSong.songTiming;
 

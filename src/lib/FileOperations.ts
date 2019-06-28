@@ -5,6 +5,7 @@ const OGG_LOAD_TIMEOUT = 60000; // Milliseconds
 const OGG_LOAD_POLL    = 200;   // Milliseconds
 
 class FileOperations {
+    // URI must already be encoded
     public static loadTextFile(uri: string) {
         return axios.get(uri, {responseType: 'text'}).then((response) => {
             return response.data;

@@ -67,14 +67,9 @@ export class Song {
         this.steps.push(steps);
         this.stepsByType[steps.stepsType].push(steps);
     }
-
-    public hasSteps(): boolean {
-        return this.steps.length > 0;
-    }
-
-    public getSteps(index: number) {
-        return this.steps[index];
-    }
+    public hasSteps(): boolean { return this.steps.length > 0; }
+    public getSteps(index: number) { return this.steps[index]; }
+    public getAllSteps() { return this.steps; }
 
     public tidyUpData() {
         this.songTiming.tidyUpData(false);

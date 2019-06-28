@@ -41,6 +41,7 @@ export class GameState {
     // Stuff used in gameplay, they mean nothing if curSong is undefined
     public curSteps: Steps[]; // One index per player; A broadcast on change pointer in C++
     public position: SongPosition = new SongPosition();
+    public selectedSteps: number;
 
     public hasteRate: number;
 
@@ -67,6 +68,7 @@ export class GameState {
 
     private constructor() {
         this.curSteps = [];
+        this.selectedSteps = 0;
 
         this.playerState = [];
         for (const pn of Helpers.forEachEnum(PlayerNumber)) {

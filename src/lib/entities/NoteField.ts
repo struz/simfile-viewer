@@ -172,7 +172,7 @@ class NoteField extends Entity {
         // is lost. Build a generic version of this efficient abstraction somewhere.
 
         // TODO: fix steps index below and replace with actual steps index when we have it later
-        const nd = GAMESTATE.curSong.getSteps(0).getNoteData();
+        const nd = GAMESTATE.curSong.getSteps(GAMESTATE.selectedSteps).getNoteData();
         for (let t = 0; t < nd.tapNotes.length; t++) {
             for (const tnEntry of nd.tapNotes[t]) {
                 // IMPORTANT: this array MUST be ordered or this continue/break logic won't work.
