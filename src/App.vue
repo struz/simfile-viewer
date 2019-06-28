@@ -138,7 +138,7 @@ class App extends Vue {
 
     let newHowl: Howl | null;
     const absoluteHowlURI = `${this.packPathPrefix}packs/${urls.ogg}`;
-    const p2 = FileOperations.loadOggFileAsHowl(absoluteHowlURI)
+    const p2 = FileOperations.loadOggFileAsHowl(absoluteHowlURI, true)
       .then((howl) => {
         newHowl = howl;
         console.log('loaded music');

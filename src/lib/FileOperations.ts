@@ -11,11 +11,18 @@ class FileOperations {
         });
     }
 
-    public static loadOggFileAsHowl(uri: string): Promise<Howl> {
+    /**
+     * Load an ogg file as a howl.
+     * @param uri The URI of the ogg file.
+     * @param stream if true allow streaming the file.
+     * @returns a promise which will return a Howl on successful completion.
+     */
+    public static loadOggFileAsHowl(uri: string, stream = false): Promise<Howl> {
         let loaded = false;
         let error: Error | null = null;
         const oggHowl = new Howl({
             src: [uri],
+            html5: stream,
             onload: () => {
                 loaded = true;
             },
