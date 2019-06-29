@@ -1,4 +1,4 @@
-import * as PIXI from 'pixi.js';
+import * as PIXI from 'pixi.js-legacy';
 import { TAPNOTE_WIDTH_PX, TAPNOTE_HEIGHT_PX, HOLD_BOTTOM_CAP_HEIGHT_PX } from './entities/EntitiesConstants';
 import SCREENMAN from './ScreenManager';
 

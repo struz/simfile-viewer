@@ -1,4 +1,4 @@
-import * as PIXI from 'pixi.js';
+import * as PIXI from 'pixi.js-legacy';
 
 import RESOURCEMAN from './ResourceManager';
 import TapNoteReceptorSprite from './entities/TapNoteReceptorSprite';
@@ -30,8 +30,6 @@ export class ScreenManager {
 
     /** The Aplication object used to interact with PIXI */
     private pixiApp: PIXI.Application | null = null;
-    /** Created sprites, stored by name. */
-    private sprites: Map<string, PIXI.Sprite> = new Map();
 
     private receptorsVisible = false;
     private receptorSprites: TapNoteReceptorSprite[] = [];
@@ -49,7 +47,11 @@ export class ScreenManager {
             height: options.height,
             view: options.renderCanvas,
             backgroundColor: 0x000000,
+            forceCanvas: true,
         });
+        if (this.pixiApp.renderer instanceof PIXI.CanvasRenderer) {
+            console.log('its canvas');
+        }
         // TODO: switch this to using pixi-display for performance
         // Uncomment next line to reverse Z ordering if desired
         // this.pixiApp.stage.sortableChildren = true;
@@ -94,11 +96,6 @@ export class ScreenManager {
             receptor.getSprite().visible = true;
         }
 
-        // const secondBeat = 2;
-        // new TapNoteSprite(TapNoteDirection.LEFT, NoteType.N_4TH, secondBeat).addToStage();
-        // new TapNoteSprite(TapNoteDirection.DOWN, NoteType.N_8TH, secondBeat).addToStage();
-        // new TapNoteSprite(TapNoteDirection.UP, NoteType.N_12TH, secondBeat).addToStage();
-        // new TapNoteSprite(TapNoteDirection.RIGHT, NoteType.N_16TH, secondBeat).addToStage();
         this.noteField = new NoteField();
         this.receptorsVisible = true;
     }

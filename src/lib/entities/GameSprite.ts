@@ -1,4 +1,4 @@
-import * as PIXI from 'pixi.js';
+import * as PIXI from 'pixi.js-legacy';
 import RESOURCEMAN, { GameSpriteInfo } from '../ResourceManager';
 import SCREENMAN from '../ScreenManager';
 import Entity from './Entity';

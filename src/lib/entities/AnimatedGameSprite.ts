@@ -1,4 +1,4 @@
-import * as PIXI from 'pixi.js';
+import * as PIXI from 'pixi.js-legacy';
 import { GameSpriteInfo } from '../ResourceManager';
 import GameSprite from './GameSprite';
 
