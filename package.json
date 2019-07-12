@@ -24,7 +24,9 @@
     "vue": "^2.6.10",
     "vue-class-component": "^7.1.0",
     "vue-property-decorator": "^8.2.1",
-    "vuetify": "^1.5.16"
+    "vuetify": "^1.5.16",
+    "lodash": ">=4.17.13",
+    "mem": ">=4.0.0"
   },
   "devDependencies": {
     "@types/chai": "^4.1.0",
