@@ -2,9 +2,10 @@ import * as PIXI from 'pixi.js-legacy';
 
 import RESOURCEMAN from './ResourceManager';
 import TapNoteReceptorSprite from './entities/TapNoteReceptorSprite';
-import { TapNoteDirection, TAPNOTE_WIDTH_PX, LANE_MARGIN } from './entities/EntitiesConstants';
+import { TapNoteDirection } from './entities/EntitiesConstants';
 import NoteField from './entities/NoteField';
 
+/** Simplify passing some arguments to ScreenManager */
 interface ScreenManagerOptions {
     renderCanvas: HTMLCanvasElement;
     width: number;
@@ -34,23 +35,35 @@ export class ScreenManager {
     private receptorsVisible = false;
     private receptorSprites: TapNoteReceptorSprite[] = [];
 
+    /** The notefield that controls adding and removing notes to/from the canvas */
     private noteField: NoteField | undefined;
+
+    /** Store some information about the screen */
+    private renderCanvas: HTMLCanvasElement | undefined;
+    // Note that because we aren't full screen that the height and width here
+    // will never line up with that of proper resolutions. Only ever do
+    // resolution calculations based on height!
+    private width = 0;
+    private height = 0;
 
     // Private constructor for singleton
     private constructor() {}
 
     public initPixi(options: ScreenManagerOptions) {
-        console.log('initpixi');
+        this.renderCanvas = options.renderCanvas;
+        this.width = options.width;
+        this.height = options.height;
+
         // Create a new PIXI app.
         this.pixiApp = new PIXI.Application({
-            width: options.width,
-            height: options.height,
-            view: options.renderCanvas,
+            width: this.width,
+            height: this.height,
+            view: this.renderCanvas,
             backgroundColor: 0x000000,
             forceCanvas: true,
         });
         if (this.pixiApp.renderer instanceof PIXI.CanvasRenderer) {
-            console.log('its canvas');
+            console.log('WebGL not supported or is turned off. Falling back to Canvas rendering.');
         }
         // TODO: switch this to using pixi-display for performance
         // Uncomment next line to reverse Z ordering if desired
@@ -72,6 +85,9 @@ export class ScreenManager {
     }
 
     public setBgColor(color: number) { this.getPixiApp().renderer.backgroundColor = color; }
+
+    public getScreenWidth() { return this.width; }
+    public getScreenHeight() { return this.height; }
 
     // TODO: move receptors into NoteField
     /** Draw the receptors to the screen. If they're already there do nothing. */

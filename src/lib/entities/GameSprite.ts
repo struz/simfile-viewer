@@ -74,6 +74,14 @@ class GameSprite extends Entity implements Drawable {
         return this;
     }
 
+    /** Reset the sprite to pick up any changes from global sources.
+     * Subclasses are intended to override this with any functionality they need.
+     */
+    public reset() {
+        // Basic sprite does nothing
+        return this;
+    }
+
     public update(deltaTime: number): this {
         // Basic sprite does nothing
         return this;

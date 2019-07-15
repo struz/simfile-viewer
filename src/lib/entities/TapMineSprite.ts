@@ -1,16 +1,17 @@
-import { TapNoteDirection, TAPNOTE_WIDTH_PX, LANE_MARGIN, directionToLaneIndex } from './EntitiesConstants';
+import { TapNoteDirection, directionToLaneIndex, DEFAULT_NOTEFIELD_HEIGHT,
+    getPosForLaneNumber,
+    RECEPTOR_MARGIN_TOP_PX} from './EntitiesConstants';
 import RESOURCEMAN, { TAP_MINE_SHEET_NAME } from '../ResourceManager';
 import AnimatedGameSprite from './AnimatedGameSprite';
 import ArrowEffects from '../ArrowEffects';
-import { RECEPTOR_MARGIN_TOP_PX } from './TapNoteReceptorSprite';
 import GameSprite from './GameSprite';
+import SCREENMAN from '../ScreenManager';
 
 const NOTESKIN = 'USWCelETT';
 
 class TapMineSprite extends AnimatedGameSprite {
     private direction: TapNoteDirection;  // Used for x position
     private noteBeat: number;
-
 
     /** Create a new mine sprite.
      * @param direction the direction the arrow should go in.
@@ -23,10 +24,8 @@ class TapMineSprite extends AnimatedGameSprite {
         this.direction = direction;
         this.noteBeat = noteBeat;
 
-        // Set the x based on the note track
-        const laneIndex = directionToLaneIndex(this.direction);
-        this.sprite.x = LANE_MARGIN + (TAPNOTE_WIDTH_PX * laneIndex);
-        this.setYPosBasedOnBeat();
+        // Ensure everything is set properly
+        this.reset();
 
         // Ensure it starts animated
         this.sprite.play();
@@ -34,6 +33,17 @@ class TapMineSprite extends AnimatedGameSprite {
 
     public getDirection() { return this.direction; }
     public getBeat() { return this.noteBeat; }
+
+    public reset() {
+        // Set the scale of the sprite based on the notefield
+        const scale = SCREENMAN.getScreenHeight() / DEFAULT_NOTEFIELD_HEIGHT;
+        this.sprite.scale.set(scale, scale); // Lock aspect ratio
+        // Set the x based on the note track
+        this.sprite.x = getPosForLaneNumber(directionToLaneIndex(this.direction), scale);
+        this.setYPosBasedOnBeat();
+
+        return this;
+    }
 
     public update(deltaTime: number) {
         // // 1 / 60 = 0.016 is when we move 3 px per frame. More than this and we move more, less and we move less.

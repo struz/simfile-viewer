@@ -3,10 +3,11 @@ import Entity from './Entity';
 
 import GameSprite, { Drawable } from './GameSprite';
 import { TapNoteDirection, directionToLaneIndex,
-    LANE_MARGIN, TAPNOTE_WIDTH_PX, HOLD_BOTTOM_CAP_HEIGHT_PX } from './EntitiesConstants';
+    HOLD_BOTTOM_CAP_HEIGHT_PX, DEFAULT_NOTEFIELD_HEIGHT,
+    getPosForLaneNumber, RECEPTOR_MARGIN_TOP_PX } from './EntitiesConstants';
 import { GameSpriteInfo } from '../ResourceManager';
 import ArrowEffects from '../ArrowEffects';
-import { RECEPTOR_MARGIN_TOP_PX } from './TapNoteReceptorSprite';
+import SCREENMAN from '../ScreenManager';
 
 // Base class for long note types like holds & rolls.
 // Represents the tail portion of a long note. The head is still a TapNote.
@@ -20,7 +21,7 @@ class BodyAndCapNote extends Entity implements Drawable {
     protected duration: number;
 
     /** The sprite showing the tiling area of really long notes. */
-    protected bodyTilingSprite: GameSprite[] | undefined;
+    protected bodyTilingSprite: GameSprite[] = [];
     /** The sprite showing the beginning of the body of the long note. */
     protected bodySprite: GameSprite;
     /** The sprite showing the bottom of the long note. */
@@ -43,10 +44,17 @@ class BodyAndCapNote extends Entity implements Drawable {
         this.noteBeat = noteBeat;
         this.duration = duration;
         this.onStage = false;
-
-        // We anchor to the top of the hold, but the middle of the cap, so do some maths
-        // to make them line up. This height does not include to the tip of the cap.
         this.height = this.calculateLongNoteHeight();
+
+        // Set the scale of the sprite based on the notefield
+        const scale = SCREENMAN.getScreenHeight() / DEFAULT_NOTEFIELD_HEIGHT;
+
+        // Everything we do here is before we've scaled up the sprites, so we need to
+        // do everything in smaller increments.
+        // Let X be the height of the texture pre-scaling we need to get a certain height post scaling
+        // Let Y be that height post scaling. Y is known (this.height)
+        // X = Y / scale;
+        const downscaledBodyTexHeight = this.height / scale;
 
         // Work out the dimensions for the first segment of the long note. Often this
         // will be all we need to display it fully. This segment is special because
@@ -54,7 +62,7 @@ class BodyAndCapNote extends Entity implements Drawable {
         // line up with the texture of the bottom cap.
         let firstBodySegmentTexStartY = 0;
         let firstBodySegmentTexHeight = 0;
-        firstBodySegmentTexStartY = bodySpriteInfo.height - (this.height % bodySpriteInfo.height);
+        firstBodySegmentTexStartY = bodySpriteInfo.height - (downscaledBodyTexHeight % bodySpriteInfo.height);
         firstBodySegmentTexHeight = bodySpriteInfo.height - firstBodySegmentTexStartY;
 
         // If we can't fit the long note entirely into the first section then we need a tiling section.
@@ -96,22 +104,12 @@ class BodyAndCapNote extends Entity implements Drawable {
 
         // Configure the sprite positions after creating the GameSprites in case their
         // constructor does anything funky to the sprites.
-
-        // Set the x based on the note track
-        const laneIndex = directionToLaneIndex(this.direction);
-        const laneX = LANE_MARGIN + (TAPNOTE_WIDTH_PX * laneIndex);
-        bodySprite.x = laneX;
-        if (this.bodyTilingSprite !== undefined) {
-            this.bodyTilingSprite.forEach((gs) => gs.getSprite().x = laneX);
-        }
-        bottomCapSprite.x = laneX;
+        this.reset();
 
         // Make sure we anchor the Y to the top of each component so we have an easy time
         // with maths.
         bodySprite.anchor.y = 0;
-        if (this.bodyTilingSprite !== undefined) {
-            this.bodyTilingSprite.forEach((gs) => gs.getSprite().anchor.y = 0);
-        }
+        this.bodyTilingSprite.forEach((gs) => gs.getSprite().anchor.y = 0);
         bottomCapSprite.anchor.y = 0;
 
         this.updateSprites();
@@ -130,9 +128,7 @@ class BodyAndCapNote extends Entity implements Drawable {
         // It is very important that the bottom cap is added first
         // If Z indexing is disabled this is the only way to ensure it draws below.
         this.bottomCapSprite.addToStage();
-        if (this.bodyTilingSprite !== undefined) {
-            this.bodyTilingSprite.forEach((gs) => gs.addToStage());
-        }
+        this.bodyTilingSprite.forEach((gs) => gs.addToStage());
         this.bodySprite.addToStage();
         return this;
     }
@@ -141,10 +137,27 @@ class BodyAndCapNote extends Entity implements Drawable {
 
         this.onStage = false;
         this.bottomCapSprite.removeFromStage();
-        if (this.bodyTilingSprite !== undefined) {
-            this.bodyTilingSprite.forEach((gs) => gs.removeFromStage());
-        }
+        this.bodyTilingSprite.forEach((gs) => gs.removeFromStage());
         this.bodySprite.removeFromStage();
+        return this;
+    }
+
+    public reset() {
+        // Because we don't want to deal with recreating all the sprites, a reset will
+        // just reposition and rescale them.
+        const scale = SCREENMAN.getScreenHeight() / DEFAULT_NOTEFIELD_HEIGHT;
+        this.bodySprite.getSprite().scale.set(scale, scale);
+        this.bottomCapSprite.getSprite().scale.set(scale, scale);
+        this.bodyTilingSprite.forEach((sprite) => sprite.getSprite().scale.set(scale, scale));
+
+        // Set the x of all components based on the note track
+        const laneX = getPosForLaneNumber(directionToLaneIndex(this.direction), scale);
+        this.bodySprite.getSprite().x = laneX;
+        this.bodyTilingSprite.forEach((gs) => gs.getSprite().x = laneX);
+        this.bottomCapSprite.getSprite().x = laneX;
+
+        // Y changes are handled per frame anyway so don't worry about them in this function
+
         return this;
     }
 
@@ -153,6 +166,9 @@ class BodyAndCapNote extends Entity implements Drawable {
         return this;
     }
 
+    /** Calculate the height of the long note, from the top anchor point of the first segment through to
+     * the top anchor point of the cap sprite.
+     */
     private calculateLongNoteHeight() {
         const peakYOffset = {value: 0};
         const isPastPeakOut = {value: false};
@@ -163,8 +179,6 @@ class BodyAndCapNote extends Entity implements Drawable {
         const capYPos = ArrowEffects.getYOffset(
             this.noteBeat + this.duration,
             peakYOffset, isPastPeakOut) + RECEPTOR_MARGIN_TOP_PX;
-        // Because we anchor to the top of the bottom cap we need to subtract half the height
-        // to get it to line up with where it should be placed.
         return capYPos - headYPos - (HOLD_BOTTOM_CAP_HEIGHT_PX / 2);
     }
 
